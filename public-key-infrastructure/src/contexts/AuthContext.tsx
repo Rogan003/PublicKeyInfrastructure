@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { apiService } from '../services/api';
-import type { User } from '../types/auth';
+import type { JwtPayload, User } from '../types/auth';
+import { jwtDecode } from 'jwt-decode';
 
 interface AuthContextType {
   user: User | null;
@@ -30,13 +31,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Proveri da li postoji validan token pri učitavanju
     const checkAuth = async () => {
       if (apiService.isAuthenticated()) {
         try {
-          // Ovde možeš dodati poziv na backend da proveriš validnost tokena
-          // i da dobiješ informacije o korisniku
-          setIsLoading(false);
+          const accessToken = apiService.getAccessToken();
+          if (accessToken) {
+            const decoded = jwtDecode<JwtPayload>(accessToken);
+            const userData: User = {
+              id: decoded.userId,
+              email: decoded.sub,
+              role: decoded.role,
+              enabled: true
+            };
+            //console.log(userData);
+            setUser(userData);
+            setIsLoading(false);
+          }
         } catch (error) {
           apiService.clearTokens();
           setIsLoading(false);
@@ -55,11 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.success) {
         apiService.setTokens(response.accessToken, response.refreshToken);
         
-        // Kreiraj user objekat
         const userData: User = {
-          id: 0, // Ovo ćeš dobiti iz JWT tokena ili backend-a
+          id: 0,
           email: response.userEmail,
-          role: 'REGULAR_USER', // Ovo ćeš dobiti iz JWT tokena
+          role: 'REGULAR_USER',
           enabled: true
         };
         

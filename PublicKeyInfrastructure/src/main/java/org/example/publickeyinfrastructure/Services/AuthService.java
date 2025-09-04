@@ -1,6 +1,6 @@
 package org.example.publickeyinfrastructure.Services;
 
-import java.util.Collections;
+
 
 import org.example.publickeyinfrastructure.DTOs.AuthResponseDTO;
 import org.example.publickeyinfrastructure.DTOs.LoginDTO;
@@ -10,29 +10,21 @@ import org.example.publickeyinfrastructure.Entities.RegularUser;
 import org.example.publickeyinfrastructure.Entities.User;
 import org.example.publickeyinfrastructure.Repositories.UserRepository;
 import org.example.publickeyinfrastructure.Utils.JwtUtil;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.core.userdetails.UserDetails;
 
 
 @Service
 public class AuthService  {
     
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     
     public AuthService(UserRepository userRepository, 
-                      PasswordEncoder passwordEncoder, 
                       JwtUtil jwtUtil, 
                       RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
     }
@@ -46,16 +38,16 @@ public class AuthService  {
         // Create new user
         RegularUser newUser = new RegularUser(
             registrationDTO.getEmail(),
-            passwordEncoder.encode(registrationDTO.getPassword()),
+            registrationDTO.getPassword(),
             registrationDTO.getName(),
             registrationDTO.getSurname(),
             registrationDTO.getOrganization()
         );
         
-        // Save user
+        // Persist user first to ensure ID is generated and relationships are valid
         User savedUser = userRepository.save(newUser);
         
-        // Generate tokens
+        // Generate tokens using the persisted user's data
         String accessToken = jwtUtil.generateAccessToken(
             savedUser.getEmail(), 
             savedUser.getRole().toString(), 
@@ -63,7 +55,11 @@ public class AuthService  {
         );
         
         var refreshToken = refreshTokenService.createRefreshToken(savedUser);
-        
+
+        if (refreshToken == null) {
+            return new AuthResponseDTO(null, null, "Refresh token not found", false, null);
+        }
+
         return new AuthResponseDTO(
             accessToken,
             refreshToken.getToken(),
@@ -74,34 +70,41 @@ public class AuthService  {
     }
     
     public AuthResponseDTO loginUser(LoginDTO loginDTO) {
+
         // Find user by email
         User user = userRepository.findByEmail(loginDTO.getEmail())
             .orElse(null);
-        
+ 
         if (user == null) {
             return new AuthResponseDTO(null, null, "Invalid email or password", false, null);
         }
         
         // Check password
-        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+        if (!loginDTO.getPassword().equals(user.getPassword())) {
             return new AuthResponseDTO(null, null, "Invalid email or password", false, null);
         }
         
         // Check if user is enabled
-        if (user instanceof RegularUser) {
-            if (!((RegularUser) user).isEnabled()) {
-                return new AuthResponseDTO(null, null, "Account is disabled", false, null);
-            }
+        //if (user instanceof RegularUser) {
+            //if (!((RegularUser) user).isEnabled()) {
+            //    return new AuthResponseDTO(null, null, "Account is disabled", false, null);
+            //}
+        //}
+              
+        String accessToken;
+        try {
+            accessToken = jwtUtil.generateAccessToken(
+                user.getEmail(), 
+                user.getRole().toString(), 
+                user.getId()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new AuthResponseDTO(null, null, "Token generation failed: " + e.getMessage(), false, null);
         }
         
-        // Generate tokens
-        String accessToken = jwtUtil.generateAccessToken(
-            user.getEmail(), 
-            user.getRole().toString(), 
-            user.getId()
-        );
-        
         var refreshToken = refreshTokenService.createRefreshToken(user);
+
         
         return new AuthResponseDTO(
             accessToken,

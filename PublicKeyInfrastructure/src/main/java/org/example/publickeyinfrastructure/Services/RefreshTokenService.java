@@ -18,6 +18,7 @@ public class RefreshTokenService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
     
+    @org.springframework.transaction.annotation.Transactional
     public RefreshToken createRefreshToken(User user) {
         // Obriši postojeći refresh token za korisnika
         refreshTokenRepository.deleteByUser(user);

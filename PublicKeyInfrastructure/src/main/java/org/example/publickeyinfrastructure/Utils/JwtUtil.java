@@ -28,12 +28,19 @@ public class JwtUtil {
     
     // Generisanje Access Tokena (kratkog života - 15 minuta)
     public String generateAccessToken(String email, String role, Long userId) {
+        
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         claims.put("userId", userId);
         claims.put("tokenType", "ACCESS");
         
-        return createToken(claims, email, accessTokenExpiration);
+        try {
+            String token = createToken(claims, email, accessTokenExpiration);
+            return token;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
     
     // Generisanje Refresh Tokena (dugog života - 7 dana)

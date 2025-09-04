@@ -20,6 +20,11 @@ public class RegularUser extends User {
     @Column(nullable = false)
     private boolean enabled = false;
     
+    // Default constructor required by Hibernate
+    public RegularUser() {
+        super();
+    }
+    
     public RegularUser(String email, String password, String name, String surname, String organization) {
         super();
         this.setEmail(email);

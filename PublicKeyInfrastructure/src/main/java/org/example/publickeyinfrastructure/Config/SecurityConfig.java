@@ -20,10 +20,11 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtAuthFilter;
     
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    // PasswordEncoder bean removed - not using password hashing for now
+    // @Bean
+    // public PasswordEncoder passwordEncoder() {
+    //     return new BCryptPasswordEncoder();
+    // }
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

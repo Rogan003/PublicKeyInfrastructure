@@ -32,3 +32,12 @@ export interface User {
   organization?: string;
   enabled: boolean;
 }
+
+export interface JwtPayload {
+  userId: number;
+  sub: string;
+  role: string;
+  tokenType: string;
+  exp: number;
+  iat: number;
+}
