@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.example.publickeyinfrastructure.DTOs.PwnedDTO;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -21,14 +23,14 @@ public class AuthController {
     public ResponseEntity<AuthResponseDTO> registerUser(@RequestBody RegistrationDTO registrationDTO) {
         try {
             AuthResponseDTO response = authService.registerUser(registrationDTO);
-            if (response.isSuccess()) {
+            if (response.isSuccess() || response.getPwnedPassword().isPwned()) {
                 return ResponseEntity.ok(response);
             } else {
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                .body(new AuthResponseDTO(null, null, "Registration failed: " + e.getMessage(), false, null));
+                .body(new AuthResponseDTO(null, null, "Registration failed: " + e.getMessage(), false, null, new PwnedDTO(false, 0)));
         }
     }
     
@@ -43,7 +45,7 @@ public class AuthController {
             }
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                .body(new AuthResponseDTO(null, null, "Login failed: " + e.getMessage(), false, null));
+                .body(new AuthResponseDTO(null, null, "Login failed: " + e.getMessage(), false, null, new PwnedDTO(false, 0)));
         }
     }
     
@@ -58,21 +60,11 @@ public class AuthController {
             }
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                .body(new AuthResponseDTO(null, null, "Token refresh failed: " + e.getMessage(), false, null));
+                .body(new AuthResponseDTO(null, null, "Token refresh failed: " + e.getMessage(), false, null, new PwnedDTO(false, 0)));
         }
     }
     
-    @PostMapping("/logout")
-    public ResponseEntity<AuthResponseDTO> logout(@RequestHeader("Authorization") String authHeader) {
-        try {
-            String refreshToken = authHeader.replace("Bearer ", "");
-            AuthResponseDTO response = authService.logout(refreshToken);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                .body(new AuthResponseDTO(null, null, "Logout failed: " + e.getMessage(), false, null));
-        }
-    }
+    // Logout endpoint removed - stateless refresh tokens don't require server-side logout
     
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {

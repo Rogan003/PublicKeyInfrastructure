@@ -75,14 +75,8 @@ class ApiService {
   }
 
   async logout(): Promise<void> {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
-      try {
-        await this.api.post('/auth/logout', { refreshToken });
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
-    }
+    // For stateless refresh tokens, logout is handled client-side
+    // Simply clear the tokens from localStorage
     this.clearTokens();
   }
 

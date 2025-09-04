@@ -13,4 +13,5 @@ public class AuthResponseDTO {
     private String message;
     private boolean success;
     private String userEmail;
+    private PwnedDTO pwnedPassword;
 }

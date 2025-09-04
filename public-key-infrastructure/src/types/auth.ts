@@ -11,12 +11,18 @@ export interface RegistrationDTO {
   organization: string;
 }
 
+interface PwnedDTO {
+  pwned: boolean;
+  breachCount: number;
+}
+
 export interface AuthResponseDTO {
   accessToken: string;
   refreshToken: string;
   message: string;
   success: boolean;
   userEmail: string;
+  pwnedPassword: PwnedDTO;
 }
 
 export interface TokenRefreshDTO {

@@ -13,37 +13,37 @@ const Dashboard: React.FC = () => {
   };
 
   if (!user) {
-    return <div>Učitavanje...</div>;
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>PKI Dashboard</h1>
+        <h1>Public Key Infrastructure Dashboard</h1>
         <div className="user-info">
-          <span>Dobrodošli, {user.email}</span>
+          <span>Welcome, {user.email}</span>
           <button onClick={handleLogout} className="logout-button">
-            Odjavi se
+            Logout
           </button>
         </div>
       </header>
 
       <main className="dashboard-content">
         <div className="dashboard-card">
-          <h2>Informacije o korisniku</h2>
+          <h2>User Information</h2>
           <div className="user-details">
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Rola:</strong> {user.role}</p>
-            <p><strong>Status:</strong> {user.enabled ? 'Aktivan' : 'Neaktivan'}</p>
-            {user.name && <p><strong>Ime:</strong> {user.name}</p>}
-            {user.surname && <p><strong>Prezime:</strong> {user.surname}</p>}
-            {user.organization && <p><strong>Organizacija:</strong> {user.organization}</p>}
+              <p><strong>Status:</strong> {user.enabled ? 'Active' : 'Inactive'}</p>
+            {user.name && <p><strong>Name:</strong> {user.name}</p>}
+            {user.surname && <p><strong>Surname:</strong> {user.surname}</p>}
+            {user.organization && <p><strong>Organization:</strong> {user.organization}</p>}
           </div>
         </div>
 
         <div className="dashboard-card">
-          <h2>PKI Funkcionalnosti</h2>
-          <p>Ovde će biti implementirane PKI funkcionalnosti...</p>
+          <h2>PKI Functionalities</h2>
+          <p>Here will be implemented PKI functionalities...</p>
         </div>
       </main>
     </div>

@@ -14,6 +14,57 @@ interface RegisterFormData {
   organization: string;
 }
 
+function checkPasswordStrength(password: string): number {
+  let score = 0;
+
+  // Minimum 8 / 12 characters
+  if (password.length >= 12) {
+    score += 2;
+  } else if (password.length >= 8) {
+    score += 1;
+  }
+
+  // Uppercase letters
+  if (/[A-Z]/.test(password)) {
+    score++;
+  }
+
+  // Lowercase letters
+  if (/[a-z]/.test(password)) {
+    score++;
+  }
+
+  // Numbers
+  if (/[0-9]/.test(password)) {
+    score++;
+  }
+
+  // Special characters
+  if (/[!@#\$%\^&*()_+\-=\[\]{};':"\\|,.<>?]/.test(password)) {
+    score++;
+  }
+
+  // Passphrase (20+ chars)
+  if (password.length >= 20) {
+    score++;
+  }
+
+  return score;
+}
+
+function getPasswordStrengthInfo(strength: number) {
+  if (strength < 3) {
+    return { text: 'Weak', color: '#dc3545' }; // Red
+  } else if (strength < 5) {
+    return { text: 'Medium', color: '#ffc107' }; // Yellow
+  } else if (strength < 7) {
+    return { text: 'Strong', color: '#28a745' }; // Green
+  } else {
+    return { text: 'Very Strong', color: '#20c997' }; // Teal
+  }
+}
+
+
 const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { register: registerUser } = useAuth();
@@ -39,15 +90,18 @@ const Register: React.FC = () => {
         surname: data.surname,
         organization: data.organization,
       });
-      
-      if (success) {
-        toast.success('Uspešno ste se registrovali!');
+ 
+      if (success.success) {
+        toast.success('Registration successful!');
         navigate('/dashboard');
+      } else if (success.pwned) {
+        console.log('Registration failed, password is pwned. Breach count: ' + success.breachCount);
+        toast.error('Registration failed, password is pwned. Breach count: ' + success.breachCount);
       } else {
-        toast.error('Neuspešna registracija. Pokušajte ponovo.');
+        toast.error('Registration failed, try again.');
       }
     } catch (error) {
-      toast.error('Greška pri registraciji. Pokušajte ponovo.');
+      toast.error('Registration failed, try again.');
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +110,7 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>Registracija</h2>
+        <h2>Registration</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -64,104 +118,132 @@ const Register: React.FC = () => {
               type="email"
               id="email"
               {...register('email', {
-                required: 'Email je obavezan',
+                required: 'Email is required',
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Neispravan email format',
+                  message: 'Invalid email format',
                 },
               })}
-              placeholder="Unesite email"
+              placeholder="Enter email"
             />
             {errors.email && <span className="error">{errors.email.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="name">Ime</label>
+            <label htmlFor="name">Name</label>
             <input
               type="text"
               id="name"
               {...register('name', {
-                required: 'Ime je obavezno',
+                required: 'Name is required',
                 minLength: {
                   value: 2,
-                  message: 'Ime mora imati najmanje 2 karaktera',
+                  message: 'Name must have at least 2 characters',
                 },
               })}
-              placeholder="Unesite ime"
+              placeholder="Enter name"
             />
             {errors.name && <span className="error">{errors.name.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="surname">Prezime</label>
+            <label htmlFor="surname">Surname</label>
             <input
               type="text"
               id="surname"
               {...register('surname', {
-                required: 'Prezime je obavezno',
+                required: 'Surname is required',
                 minLength: {
                   value: 2,
-                  message: 'Prezime mora imati najmanje 2 karaktera',
+                  message: 'Surname must have at least 2 characters',
                 },
               })}
-              placeholder="Unesite prezime"
+              placeholder="Enter surname"
             />
             {errors.surname && <span className="error">{errors.surname.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="organization">Organizacija</label>
+            <label htmlFor="organization">Organization</label>
             <input
               type="text"
               id="organization"
               {...register('organization', {
-                required: 'Organizacija je obavezna',
+                required: 'Organization is required',
               })}
-              placeholder="Unesite organizaciju"
+              placeholder="Enter organization"
             />
             {errors.organization && <span className="error">{errors.organization.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Lozinka</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
               {...register('password', {
-                required: 'Lozinka je obavezna',
+                required: 'Password is required',
                 minLength: {
-                  value: 6,
-                  message: 'Lozinka mora imati najmanje 6 karaktera',
+                  value: 8,
+                  message: 'Password must have at least 8 characters',
+                },
+                maxLength: {
+                  value: 128,
+                  message: 'Password must have at most 128 characters',
+                },
+                validate: (value) => {
+                  const strength = checkPasswordStrength(value);
+                  if (strength < 3) {
+                    return false;
+                  }
+                  return true;
                 },
               })}
-              placeholder="Unesite lozinku"
+              placeholder="Enter password"
             />
+            {password && (
+              <div className="password-strength-indicator">
+                <div 
+                  className="strength-bar"
+                  style={{ 
+                    backgroundColor: getPasswordStrengthInfo(checkPasswordStrength(password)).color,
+                    width: `${Math.min((checkPasswordStrength(password) / 7) * 100, 100)}%`
+                  }}
+                ></div>
+                <span 
+                  className="strength-text"
+                  style={{ color: getPasswordStrengthInfo(checkPasswordStrength(password)).color }}
+                >
+                  {getPasswordStrengthInfo(checkPasswordStrength(password)).text}
+                </span>
+              </div>
+            )}
             {errors.password && <span className="error">{errors.password.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Potvrda lozinke</label>
+            <label htmlFor="confirmPassword">Confirm password</label>
             <input
               type="password"
               id="confirmPassword"
               {...register('confirmPassword', {
-                required: 'Potvrda lozinke je obavezna',
+                required: 'Confirm password is required',
                 validate: (value) =>
-                  value === password || 'Lozinke se ne poklapaju',
+                  value === password || 'Passwords do not match',
               })}
-              placeholder="Potvrdite lozinku"
+              placeholder="Confirm password"
             />
             {errors.confirmPassword && <span className="error">{errors.confirmPassword.message}</span>}
           </div>
 
           <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? 'Registracija...' : 'Registrujte se'}
+            {isLoading ? 'Registration...' : 'Register'}
           </button>
         </form>
 
         <div className="auth-links">
           <p>
-            Već imate nalog? <Link to="/login">Prijavite se</Link>
+            Already have an account? <Link to="/login">Login</Link>
           </p>
         </div>
       </div>

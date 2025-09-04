@@ -2,14 +2,21 @@ import React, { createContext, useContext, useState, useEffect, type ReactNode }
 import { apiService } from '../services/api';
 import type { JwtPayload, User } from '../types/auth';
 import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-hot-toast';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: any) => Promise<boolean>;
+  register: (userData: any) => Promise<registerResponse>;
   logout: () => void;
+}
+
+interface registerResponse {
+  success: boolean;
+  pwned: boolean;
+  breachCount: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,7 +50,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               role: decoded.role,
               enabled: true
             };
-            //console.log(userData);
             setUser(userData);
             setIsLoading(false);
           }
@@ -82,9 +88,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (userData: any): Promise<boolean> => {
+  const register = async (userData: any): Promise<registerResponse> => {
     try {
       const response = await apiService.register(userData);
+      console.log(response);
       if (response.success) {
         apiService.setTokens(response.accessToken, response.refreshToken);
         
@@ -96,12 +103,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         
         setUser(user);
-        return true;
+        return { success: true, pwned: false, breachCount: 0 };
       }
-      return false;
+      if (response.pwnedPassword.pwned) {
+        return { success: false, pwned: true, breachCount: response.pwnedPassword.breachCount };
+      }
+      return { success: false, pwned: false, breachCount: 0 };
     } catch (error) {
       console.error('Registration error:', error);
-      return false;
+      toast.error('aaaaaaaaaaaaaaaa'); 
+      return { success: false, pwned: false, breachCount: 0 };
     }
   };
 

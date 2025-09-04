@@ -43,7 +43,7 @@ const Login: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>Prijava</h2>
+        <h2>Login</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -51,42 +51,42 @@ const Login: React.FC = () => {
               type="email"
               id="email"
               {...register('email', {
-                required: 'Email je obavezan',
+                required: 'Email is required',
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Neispravan email format',
+                  message: 'Invalid email format',
                 },
               })}
-              placeholder="Unesite email"
+              placeholder="Enter email"
             />
             {errors.email && <span className="error">{errors.email.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Lozinka</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
               {...register('password', {
-                required: 'Lozinka je obavezna',
+                required: 'Password is required',
                 minLength: {
                   value: 6,
-                  message: 'Lozinka mora imati najmanje 6 karaktera',
+                  message: 'Password must have at least 6 characters',
                 },
               })}
-              placeholder="Unesite lozinku"
+              placeholder="Enter password"
             />
             {errors.password && <span className="error">{errors.password.message}</span>}
           </div>
 
           <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? 'Prijavljivanje...' : 'Prijavi se'}
+            {isLoading ? 'Login...' : 'Login'}
           </button>
         </form>
 
         <div className="auth-links">
           <p>
-            Nemate nalog? <Link to="/register">Registrujte se</Link>
+              Nemate nalog? <Link to="/register">Register</Link>
           </p>
         </div>
       </div>

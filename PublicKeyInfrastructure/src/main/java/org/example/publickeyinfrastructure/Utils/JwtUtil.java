@@ -26,7 +26,6 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
     
-    // Generisanje Access Tokena (kratkog života - 15 minuta)
     public String generateAccessToken(String email, String role, Long userId) {
         
         Map<String, Object> claims = new HashMap<>();
@@ -43,7 +42,6 @@ public class JwtUtil {
         }
     }
     
-    // Generisanje Refresh Tokena (dugog života - 7 dana)
     public String generateRefreshToken(String email, Long userId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
@@ -65,7 +63,6 @@ public class JwtUtil {
                 .compact();
     }
     
-    // Izdvajanje claims
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -102,7 +99,6 @@ public class JwtUtil {
                 .getPayload();
     }
     
-    // Validacija tokena
     public Boolean validateToken(String token) {
         try {
             return !isTokenExpired(token);
