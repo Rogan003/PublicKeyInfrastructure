@@ -13,6 +13,8 @@ import org.example.publickeyinfrastructure.Utils.JwtUtil;
 import org.springframework.stereotype.Service;
 
 import org.example.publickeyinfrastructure.DTOs.PwnedDTO;
+import org.example.publickeyinfrastructure.Services.EmailVerificationService;
+import org.example.publickeyinfrastructure.Entities.EmailVerificationResult;
 
 
 
@@ -22,13 +24,16 @@ public class AuthService  {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordService passwordService;
+    private final EmailVerificationService emailVerificationService;
     
     public AuthService(UserRepository userRepository, 
                       JwtUtil jwtUtil, 
-                      PasswordService passwordService) {
+                      PasswordService passwordService,
+                      EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.passwordService = passwordService;
+        this.emailVerificationService = emailVerificationService;
     }
     
     public AuthResponseDTO registerUser(RegistrationDTO registrationDTO) {
@@ -55,22 +60,18 @@ public class AuthService  {
         // Persist user first to ensure ID is generated and relationships are valid
         User savedUser = userRepository.save(newUser);
         
-        // Generate tokens using the persisted user's data
-        String accessToken = jwtUtil.generateAccessToken(
-            savedUser.getEmail(), 
-            savedUser.getRole().toString(), 
-            savedUser.getId()
-        );
+        // Send verification email
+        try {
+            emailVerificationService.sendVerificationEmail((RegularUser) savedUser);
+        } catch (Exception e) {
+            System.err.println("Error sending verification email: " + e.getMessage());
+            e.printStackTrace();
+        }
         
-        String refreshToken = jwtUtil.generateRefreshToken(
-            savedUser.getEmail(), 
-            savedUser.getId()
-        );
-
         return new AuthResponseDTO(
-            accessToken,
-            refreshToken,
-            "User registered successfully",
+            null,
+            null,
+            "User registered successfully. Please check your email to verify your account.",
             true,
             savedUser.getEmail(),
             new PwnedDTO(false, 0)
@@ -92,12 +93,12 @@ public class AuthService  {
             return new AuthResponseDTO(null, null, "Invalid email or password", false, null, new PwnedDTO(false, 0));
         }
         
-        // Check if user is enabled
-        //if (user instanceof RegularUser) {
-            //if (!((RegularUser) user).isEnabled()) {
-            //    return new AuthResponseDTO(null, null, "Account is disabled", false, null, new PwnedPassword(false, 0));
-            //}
-        //}
+        //Check if user is enabled
+        if (user instanceof RegularUser) {
+            if (!((RegularUser) user).isEnabled()) {
+                return new AuthResponseDTO(null, null, "Email is not verified", false, null, new PwnedDTO(false, 0));
+            }
+        }
               
         String accessToken;
         String refreshToken;

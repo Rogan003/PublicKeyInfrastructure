@@ -93,7 +93,7 @@ const Register: React.FC = () => {
  
       if (success.success) {
         toast.success('Registration successful!');
-        navigate('/dashboard');
+        navigate('/login');
       } else if (success.pwned) {
         console.log('Registration failed, password is pwned. Breach count: ' + success.breachCount);
         toast.error('Registration failed, password is pwned. Breach count: ' + success.breachCount);

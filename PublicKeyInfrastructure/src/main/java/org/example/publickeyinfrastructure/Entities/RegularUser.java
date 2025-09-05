@@ -1,8 +1,10 @@
 package org.example.publickeyinfrastructure.Entities;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter 
@@ -19,8 +21,14 @@ public class RegularUser extends User {
     
     @Column(nullable = false)
     private boolean enabled = false;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column
+    private LocalDateTime emailVerifiedAt;
     
-    // Default constructor required by Hibernate
     public RegularUser() {
         super();
     }
@@ -33,5 +41,6 @@ public class RegularUser extends User {
         this.setRole(Role.REGULAR_USER);
         this.surname = surname;
         this.organization = organization;
+        this.createdAt = LocalDateTime.now();
     }
 }

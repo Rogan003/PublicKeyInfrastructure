@@ -28,13 +28,13 @@ const Login: React.FC = () => {
       const success = await login(data.email, data.password);
       
       if (success) {
-        toast.success('Uspešno ste se prijavili!');
+        toast.success('Successfully logged in!');
         navigate('/dashboard');
       } else {
-        toast.error('Neuspešna prijava. Proverite email i lozinku.');
+        toast.error('Failed to login. Check email and password.');
       }
     } catch (error) {
-      toast.error('Greška pri prijavi. Pokušajte ponovo.');
+      toast.error('Error logging in. Try again.');
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
 
         <div className="auth-links">
           <p>
-              Nemate nalog? <Link to="/register">Register</Link>
+              Don't have an account? <Link to="/register">Register</Link>
           </p>
         </div>
       </div>

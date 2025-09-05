@@ -8,6 +8,14 @@ import org.example.publickeyinfrastructure.Services.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.example.publickeyinfrastructure.Services.EmailVerificationService;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Optional;
+import org.example.publickeyinfrastructure.Entities.User;
+import org.example.publickeyinfrastructure.Entities.EmailVerificationResult;
+import org.example.publickeyinfrastructure.DTOs.ResendVerificationDTO;
+
 
 import org.example.publickeyinfrastructure.DTOs.PwnedDTO;
 
@@ -18,6 +26,8 @@ public class AuthController {
     
     @Autowired
     private AuthService authService;
+    @Autowired
+    private EmailVerificationService emailVerificationService;
     
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDTO> registerUser(@RequestBody RegistrationDTO registrationDTO) {
@@ -64,10 +74,34 @@ public class AuthController {
         }
     }
     
-    // Logout endpoint removed - stateless refresh tokens don't require server-side logout
-    
-    @GetMapping("/health")
-    public ResponseEntity<String> healthCheck() {
-        return ResponseEntity.ok("Auth service is running");
+    @GetMapping("/verify-email")
+    public ResponseEntity<Map<String, Object>> verifyEmail(@RequestParam String token) {
+        EmailVerificationResult result = emailVerificationService.verifyEmail(token);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", result.isSuccess());
+        response.put("message", result.getMessage());
+        
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
     }
+    
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, Object>> resendVerification(@RequestBody ResendVerificationDTO request) {
+        EmailVerificationResult result = emailVerificationService.resendVerificationEmail(request.getEmail());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", result.isSuccess());
+        response.put("message", result.getMessage());
+        
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+    
 }

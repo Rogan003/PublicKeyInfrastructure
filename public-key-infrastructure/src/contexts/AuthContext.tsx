@@ -94,15 +94,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log(response);
       if (response.success) {
         apiService.setTokens(response.accessToken, response.refreshToken);
-        
-        const user: User = {
-          id: 0,
-          email: response.userEmail,
-          role: 'REGULAR_USER',
-          enabled: true
-        };
-        
-        setUser(user);
         return { success: true, pwned: false, breachCount: 0 };
       }
       if (response.pwnedPassword.pwned) {
@@ -110,8 +101,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return { success: false, pwned: false, breachCount: 0 };
     } catch (error) {
-      console.error('Registration error:', error);
-      toast.error('aaaaaaaaaaaaaaaa'); 
       return { success: false, pwned: false, breachCount: 0 };
     }
   };
