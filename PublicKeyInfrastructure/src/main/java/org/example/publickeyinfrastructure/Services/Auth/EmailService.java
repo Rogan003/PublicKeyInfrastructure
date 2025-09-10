@@ -1,9 +1,9 @@
-package org.example.publickeyinfrastructure.Services;
+package org.example.publickeyinfrastructure.Services.Auth;
 
 import org.springframework.stereotype.Service;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.example.publickeyinfrastructure.Entities.RegularUser;
+import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.UnsupportedEncodingException;

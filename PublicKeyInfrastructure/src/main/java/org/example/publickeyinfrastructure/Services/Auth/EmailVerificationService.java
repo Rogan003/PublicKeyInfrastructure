@@ -1,13 +1,13 @@
-package org.example.publickeyinfrastructure.Services;
+package org.example.publickeyinfrastructure.Services.Auth;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.example.publickeyinfrastructure.Repositories.EmailVerificationTokenRepository;
 import org.example.publickeyinfrastructure.Repositories.UserRepository;
-import org.example.publickeyinfrastructure.Entities.EmailVerificationToken;
-import org.example.publickeyinfrastructure.Entities.RegularUser;
-import org.example.publickeyinfrastructure.Entities.EmailVerificationResult;
+import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerificationResult;
+import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerificationToken;
+import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 
 import java.util.List;
 import java.util.Optional;

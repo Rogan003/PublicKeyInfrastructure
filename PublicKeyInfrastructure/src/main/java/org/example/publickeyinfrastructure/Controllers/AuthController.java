@@ -1,23 +1,23 @@
 package org.example.publickeyinfrastructure.Controllers;
 
-import org.example.publickeyinfrastructure.DTOs.AuthResponseDTO;
-import org.example.publickeyinfrastructure.DTOs.LoginDTO;
-import org.example.publickeyinfrastructure.DTOs.RegistrationDTO;
-import org.example.publickeyinfrastructure.DTOs.TokenRefreshDTO;
-import org.example.publickeyinfrastructure.Services.AuthService;
+import org.example.publickeyinfrastructure.DTOs.Auth.AuthResponseDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.LoginDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.PwnedDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.RegistrationDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.ResendVerificationDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.TokenRefreshDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.example.publickeyinfrastructure.Services.EmailVerificationService;
+import org.example.publickeyinfrastructure.Services.Auth.AuthService;
+import org.example.publickeyinfrastructure.Services.Auth.EmailVerificationService;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
-import org.example.publickeyinfrastructure.Entities.User;
-import org.example.publickeyinfrastructure.Entities.EmailVerificationResult;
-import org.example.publickeyinfrastructure.DTOs.ResendVerificationDTO;
 
-
-import org.example.publickeyinfrastructure.DTOs.PwnedDTO;
+import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerificationResult;
+import org.example.publickeyinfrastructure.Entities.User.User;
 
 @RestController
 @RequestMapping("/api/auth")
