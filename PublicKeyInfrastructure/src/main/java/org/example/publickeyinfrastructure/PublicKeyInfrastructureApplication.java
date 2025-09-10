@@ -1,13 +1,21 @@
 package org.example.publickeyinfrastructure;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@SpringBootApplication
+@EnableScheduling
 public class PublicKeyInfrastructureApplication {
 
     public static void main(String[] args) {
+        // Load .env file
+        Dotenv dotenv = Dotenv.configure().load();
+        dotenv.entries().forEach(entry -> {
+            System.setProperty(entry.getKey(), entry.getValue());
+        });
+        
         SpringApplication.run(PublicKeyInfrastructureApplication.class, args);
     }
 

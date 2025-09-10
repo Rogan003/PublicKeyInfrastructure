@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background-color: #2980b9;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo" th:text="${appName}">Public Key Infrastructure</div>
+        </div>
+        
+        <div class="content">
+            <h2>Email Verification Required</h2>
+            
+            <p>Hello <span th:text="${userName}">User</span>,</p>
+            
+            <p>Thank you for registering with <span th:text="${appName}">our application</span>! To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
+            
+            <div style="text-align: center;">
+                <a th:href="${verificationUrl}" class="button">Verify Email Address</a>
+            </div>
+            
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                <span th:text="${verificationUrl}">verification-url</span>
+            </p>
+            
+            <div class="warning" th:if="${isResend}">
+                <strong>Note:</strong> This is a new verification link. Previous links have been deactivated for security reasons.
+            </div>
+            
+            <p><strong>Important:</strong></p>
+            <ul>
+                <li>This verification link will expire in 24 hours</li>
+                <li>If you didn't create an account with us, please ignore this email</li>
+                <li>For security reasons, only the most recent verification link is valid</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>If you have any questions or need assistance, please contact us at <span th:text="${supportEmail}">support@example.com</span></p>
+            <p>© 2024 <span th:text="${appName}">Public Key Infrastructure</span>. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
