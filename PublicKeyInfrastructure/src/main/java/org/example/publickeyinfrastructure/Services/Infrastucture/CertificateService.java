@@ -4,9 +4,8 @@ import org.springframework.stereotype.Service;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
-import org.bouncycastle.asn1.x500.X500NameBuilder;
-import org.bouncycastle.asn1.x500.style.BCStyle;
 
 
 import  org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
@@ -27,49 +26,14 @@ public class CertificateService {
 
   private CertificateGeneratorService certificateGeneratorService;
   private CertificateRepository certificateRepository;
+  private IssuerService issuerService;
 
-  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository) {
+  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService) {
     this.certificateRepository = certificateRepository;
     this.certificateGeneratorService = certificateGeneratorService;
+    this.issuerService = issuerService;
   }
   
-  public Subject generateSubject() {
-    KeyPair keyPairSubject = generateKeyPair();
-
-    //class X500NameBuilder creates X500Name object which represents the data about the owner
-    X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-    builder.addRDN(BCStyle.CN, "Ivana Kovacevic");
-    builder.addRDN(BCStyle.SURNAME, "Kovacevic");
-    builder.addRDN(BCStyle.GIVENNAME, "Ivana");
-    builder.addRDN(BCStyle.O, "UNS-FTN");
-    builder.addRDN(BCStyle.OU, "Katedra za informatiku");
-    builder.addRDN(BCStyle.C, "RS");
-    builder.addRDN(BCStyle.E, "kovacevic.ivana@uns.ac.rs");
-    //UID (USER ID) is the ID of the user
-    builder.addRDN(BCStyle.UID, "123456");
-
-    return new Subject(keyPairSubject.getPublic(), builder.build());
-  }
-
-  public Issuer generateIssuer() {
-    KeyPair kp = generateKeyPair();
-    X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-    builder.addRDN(BCStyle.CN, "IT sluzba");
-    builder.addRDN(BCStyle.SURNAME, "sluzba");
-    builder.addRDN(BCStyle.GIVENNAME, "IT");
-    builder.addRDN(BCStyle.O, "UNS-FTN");
-    builder.addRDN(BCStyle.OU, "Katedra za informatiku");
-    builder.addRDN(BCStyle.C, "RS");
-    builder.addRDN(BCStyle.E, "itsluzba@uns.ac.rs");
-    //UID (USER ID) je ID korisnika
-    builder.addRDN(BCStyle.UID, "654321");
-
-    //The data for the issuer is created, which in this case includes:
-    // - private key which will be used to sign the certificate that is issued
-    // - data about the owner of the certificate that issues the new certificate
-    return new Issuer(kp.getPrivate(), kp.getPublic(), builder.build());
-  }
-
   public KeyPair generateKeyPair() {
     try {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
@@ -84,9 +48,14 @@ public class CertificateService {
     return null;
  }
 
- public Certificate createRootCA(Issuer rootCA) {
+  public Certificate createRootCA(IssuerDTO root) {
   try {
       // Root CA signs itself
+      Optional<Issuer> rootCAOptional = issuerService.getIssuerById(root.getId());
+      if (!rootCAOptional.isPresent()) {
+          return null;
+      }
+      Issuer rootCA = rootCAOptional.get();
       Subject rootSubject = new Subject(rootCA.getPublicKey(), rootCA.getX500Name());
 
       SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -106,8 +75,17 @@ public class CertificateService {
   return null;
 }
 
-  public Certificate createIntermediateCA(Issuer rootCA, Issuer intermediateCA) {
+  public Certificate createIntermediateCA(IssuerDTO root, IssuerDTO intermediate) {
     try {
+        Optional<Issuer> rootCAOptional = issuerService.getIssuerById(root.getId());
+        Optional<Issuer> intermediateCAOptional = issuerService.getIssuerById(intermediate.getId());
+        
+        if (!rootCAOptional.isPresent() || !intermediateCAOptional.isPresent()) {
+            return null;
+        }
+        
+        Issuer rootCA = rootCAOptional.get();
+        Issuer intermediateCA = intermediateCAOptional.get();
         Subject intermediateSubject = new Subject(intermediateCA.getPublicKey(), intermediateCA.getX500Name());
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");

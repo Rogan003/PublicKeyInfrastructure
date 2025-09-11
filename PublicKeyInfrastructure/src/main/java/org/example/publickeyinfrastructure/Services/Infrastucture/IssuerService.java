@@ -60,34 +60,6 @@ public class IssuerService {
     return issuerRepository.findByX500Name(x500Name);
   }
 
-  public Issuer updateIssuer(Long id, IssuerDTO issuerDTO) {
-    Optional<Issuer> optionalIssuer = issuerRepository.findById(id);
-    if (optionalIssuer.isPresent()) {
-      Issuer issuer = optionalIssuer.get();
-      
-      X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-      if (issuerDTO.getCommonName() != null) {
-        builder.addRDN(BCStyle.CN, issuerDTO.getCommonName());
-      }
-      if (issuerDTO.getOrganization() != null) {
-        builder.addRDN(BCStyle.O, issuerDTO.getOrganization());
-      }
-      if (issuerDTO.getCountry() != null) {
-        builder.addRDN(BCStyle.C, issuerDTO.getCountry());
-      }
-      if (issuerDTO.getEmail() != null) {
-        builder.addRDN(BCStyle.E, issuerDTO.getEmail());
-      }
-      
-      issuer.setX500Name(builder.build());
-      return issuerRepository.save(issuer);
-    }
-    return null;
-  }
-
-  public boolean existsByX500Name(String x500Name) {
-    return issuerRepository.existsByX500Name(x500Name);
-  }
 
   private KeyPair generateKeyPair() throws NoSuchAlgorithmException, NoSuchProviderException {
     KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");

@@ -2,6 +2,7 @@ package org.example.publickeyinfrastructure.Controllers;
 
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -103,9 +105,9 @@ public class CertificateController {
     }
 
     @PostMapping("/root-ca")
-    public ResponseEntity<?> createRootCA() {
+    public ResponseEntity<?> createRootCA(@RequestBody IssuerDTO root) {
         try {
-            Certificate rootCA = certificateService.createRootCA(certificateService.generateIssuer());
+            Certificate rootCA = certificateService.createRootCA(root);
             if (rootCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(rootCA);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -120,12 +122,17 @@ public class CertificateController {
     }
 
     @PostMapping("/intermediate-ca")
-    public ResponseEntity<?> createIntermediateCA() {
+    public ResponseEntity<?> createIntermediateCA(@RequestBody Map<String, IssuerDTO> request) {
         try {
-            Certificate intermediateCA = certificateService.createIntermediateCA(
-                certificateService.generateIssuer(), 
-                certificateService.generateIssuer()
-            );
+            IssuerDTO root = request.get("root");
+            IssuerDTO intermediate = request.get("intermediate");
+            
+            if (root == null || intermediate == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Both 'root' and 'intermediate' issuers are required");
+            }
+            
+            Certificate intermediateCA = certificateService.createIntermediateCA(root, intermediate);
             if (intermediateCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(intermediateCA);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -139,43 +146,5 @@ public class CertificateController {
         }
     }
 
-    @GetMapping("/download/{id}/pem")
-    public ResponseEntity<?> downloadCertificatePEM(@PathVariable Long id) {
-        try {
-            Optional<Certificate> certificate = certificateService.findBySerialNumber(id.toString());
-            if (certificate.isPresent()) {
-                CertificateDTO dto = certificateService.convertToDTO(certificate.get());
-                return ResponseEntity.ok()
-                    .header("Content-Type", "application/x-pem-file")
-                    .header("Content-Disposition", "attachment; filename=certificate_" + dto.getSerialNumber() + ".pem")
-                    .body(dto.getCertificatePEM());
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Certificate not found with id: " + id);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error downloading certificate: " + e.getMessage());
-        }
-    }
 
-    @GetMapping("/download/{id}/base64")
-    public ResponseEntity<?> downloadCertificateBase64(@PathVariable Long id) {
-        try {
-            Optional<Certificate> certificate = certificateService.findBySerialNumber(id.toString());
-            if (certificate.isPresent()) {
-                CertificateDTO dto = certificateService.convertToDTO(certificate.get());
-                return ResponseEntity.ok()
-                    .header("Content-Type", "application/octet-stream")
-                    .header("Content-Disposition", "attachment; filename=certificate_" + dto.getSerialNumber() + ".crt")
-                    .body(dto.getCertificateBase64());
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Certificate not found with id: " + id);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error downloading certificate: " + e.getMessage());
-        }
-    }
 }

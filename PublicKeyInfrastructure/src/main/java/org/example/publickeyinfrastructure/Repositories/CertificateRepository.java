@@ -24,5 +24,4 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
   @Query("SELECT c FROM Certificate c WHERE c.certificateType = :certificateType")
   List<Certificate> findByCertificateType(CertificateType certificateType);
   
-  
 }

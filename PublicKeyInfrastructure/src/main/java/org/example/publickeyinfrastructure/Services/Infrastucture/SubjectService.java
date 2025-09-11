@@ -43,17 +43,11 @@ public class SubjectService {
       if (subjectDTO.getOrganization() != null) {
         builder.addRDN(BCStyle.O, subjectDTO.getOrganization());
       }
-      if (subjectDTO.getOrganizationalUnit() != null) {
-        builder.addRDN(BCStyle.OU, subjectDTO.getOrganizationalUnit());
-      }
       if (subjectDTO.getCountry() != null) {
         builder.addRDN(BCStyle.C, subjectDTO.getCountry());
       }
       if (subjectDTO.getEmail() != null) {
         builder.addRDN(BCStyle.E, subjectDTO.getEmail());
-      }
-      if (subjectDTO.getUid() != null) {
-        builder.addRDN(BCStyle.UID, subjectDTO.getUid());
       }
 
       Subject subject = new Subject(keyPair.getPublic(), builder.build());
@@ -70,47 +64,6 @@ public class SubjectService {
 
   public Optional<Subject> getSubjectByX500Name(String x500Name) {
     return subjectRepository.findByX500Name(x500Name);
-  }
-
-  public Subject updateSubject(Long id, SubjectDTO subjectDTO) {
-    Optional<Subject> optionalSubject = subjectRepository.findById(id);
-    if (optionalSubject.isPresent()) {
-      Subject subject = optionalSubject.get();
-      
-      X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-      if (subjectDTO.getCommonName() != null) {
-        builder.addRDN(BCStyle.CN, subjectDTO.getCommonName());
-      }
-      if (subjectDTO.getSurname() != null) {
-        builder.addRDN(BCStyle.SURNAME, subjectDTO.getSurname());
-      }
-      if (subjectDTO.getGivenName() != null) {
-        builder.addRDN(BCStyle.GIVENNAME, subjectDTO.getGivenName());
-      }
-      if (subjectDTO.getOrganization() != null) {
-        builder.addRDN(BCStyle.O, subjectDTO.getOrganization());
-      }
-      if (subjectDTO.getOrganizationalUnit() != null) {
-        builder.addRDN(BCStyle.OU, subjectDTO.getOrganizationalUnit());
-      }
-      if (subjectDTO.getCountry() != null) {
-        builder.addRDN(BCStyle.C, subjectDTO.getCountry());
-      }
-      if (subjectDTO.getEmail() != null) {
-        builder.addRDN(BCStyle.E, subjectDTO.getEmail());
-      }
-      if (subjectDTO.getUid() != null) {
-        builder.addRDN(BCStyle.UID, subjectDTO.getUid());
-      }
-      
-      subject.setX500Name(builder.build());
-      return subjectRepository.save(subject);
-    }
-    return null;
-  }
-
-  public boolean existsByX500Name(String x500Name) {
-    return subjectRepository.existsByX500Name(x500Name);
   }
 
   private KeyPair generateKeyPair() throws NoSuchAlgorithmException, NoSuchProviderException {
@@ -147,17 +100,11 @@ public class SubjectService {
           case "O":
             dto.setOrganization(value);
             break;
-          case "OU":
-            dto.setOrganizationalUnit(value);
-            break;
           case "C":
             dto.setCountry(value);
             break;
           case "E":
             dto.setEmail(value);
-            break;
-          case "UID":
-            dto.setUid(value);
             break;
         }
       }

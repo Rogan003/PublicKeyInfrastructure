@@ -59,31 +59,4 @@ public class IssuerController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateIssuer(@PathVariable Long id, @RequestBody IssuerDTO issuerDTO) {
-        try {
-            Issuer updatedIssuer = issuerService.updateIssuer(id, issuerDTO);
-            if (updatedIssuer != null) {
-                IssuerDTO responseDTO = issuerService.convertToDTO(updatedIssuer);
-                return ResponseEntity.ok(responseDTO);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Issuer not found with id: " + id);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error updating issuer: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/exists")
-    public ResponseEntity<?> checkIssuerExists(@RequestParam String x500Name) {
-        try {
-            boolean exists = issuerService.existsByX500Name(x500Name);
-            return ResponseEntity.ok(exists);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error checking issuer existence: " + e.getMessage());
-        }
-    }
 }

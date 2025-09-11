@@ -59,31 +59,4 @@ public class SubjectController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateSubject(@PathVariable Long id, @RequestBody SubjectDTO subjectDTO) {
-        try {
-            Subject updatedSubject = subjectService.updateSubject(id, subjectDTO);
-            if (updatedSubject != null) {
-                SubjectDTO responseDTO = subjectService.convertToDTO(updatedSubject);
-                return ResponseEntity.ok(responseDTO);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Subject not found with id: " + id);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error updating subject: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/exists")
-    public ResponseEntity<?> checkSubjectExists(@RequestParam String x500Name) {
-        try {
-            boolean exists = subjectService.existsByX500Name(x500Name);
-            return ResponseEntity.ok(exists);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error checking subject existence: " + e.getMessage());
-        }
-    }
 }
