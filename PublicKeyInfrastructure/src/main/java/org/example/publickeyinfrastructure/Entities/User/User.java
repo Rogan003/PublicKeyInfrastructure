@@ -1,4 +1,4 @@
-package org.example.publickeyinfrastructure.Entities;
+package org.example.publickeyinfrastructure.Entities.User;
 
 import jakarta.persistence.*;
 import lombok.Getter;

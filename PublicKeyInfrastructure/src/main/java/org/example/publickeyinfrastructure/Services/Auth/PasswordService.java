@@ -1,4 +1,4 @@
-package org.example.publickeyinfrastructure.Services;
+package org.example.publickeyinfrastructure.Services.Auth;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

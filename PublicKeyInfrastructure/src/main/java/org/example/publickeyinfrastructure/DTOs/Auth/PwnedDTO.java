@@ -1,4 +1,4 @@
-package org.example.publickeyinfrastructure.DTOs;
+package org.example.publickeyinfrastructure.DTOs.Auth;
 
 import lombok.Data;
 

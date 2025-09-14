@@ -1,20 +1,18 @@
-package org.example.publickeyinfrastructure.Services;
+package org.example.publickeyinfrastructure.Services.Auth;
 
 
 
-import org.example.publickeyinfrastructure.DTOs.AuthResponseDTO;
-import org.example.publickeyinfrastructure.DTOs.LoginDTO;
-import org.example.publickeyinfrastructure.DTOs.RegistrationDTO;
-import org.example.publickeyinfrastructure.DTOs.TokenRefreshDTO;
-import org.example.publickeyinfrastructure.Entities.RegularUser;
-import org.example.publickeyinfrastructure.Entities.User;
+import org.example.publickeyinfrastructure.DTOs.Auth.AuthResponseDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.LoginDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.PwnedDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.RegistrationDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.TokenRefreshDTO;
+import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerificationResult;
+import org.example.publickeyinfrastructure.Entities.User.User;
+import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.example.publickeyinfrastructure.Repositories.UserRepository;
 import org.example.publickeyinfrastructure.Utils.JwtUtil;
 import org.springframework.stereotype.Service;
-
-import org.example.publickeyinfrastructure.DTOs.PwnedDTO;
-import org.example.publickeyinfrastructure.Services.EmailVerificationService;
-import org.example.publickeyinfrastructure.Entities.EmailVerificationResult;
 
 
 

@@ -1,6 +1,7 @@
-package org.example.publickeyinfrastructure.Entities;
+package org.example.publickeyinfrastructure.Entities.User;
 
 import jakarta.persistence.*;
+
 import org.hibernate.annotations.CreationTimestamp;
 import lombok.Getter;
 import lombok.Setter;

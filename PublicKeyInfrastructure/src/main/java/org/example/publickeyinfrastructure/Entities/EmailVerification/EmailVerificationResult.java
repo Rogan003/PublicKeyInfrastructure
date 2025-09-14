@@ -1,4 +1,4 @@
-package org.example.publickeyinfrastructure.Entities;
+package org.example.publickeyinfrastructure.Entities.EmailVerification;
 
 import lombok.Getter;
 import lombok.Setter;
