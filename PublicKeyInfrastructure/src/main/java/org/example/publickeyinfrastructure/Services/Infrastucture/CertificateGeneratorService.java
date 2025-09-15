@@ -6,7 +6,12 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.List;
 
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -29,37 +34,74 @@ public class CertificateGeneratorService {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  public X509Certificate generateCertificate(Subject subject, Issuer issuer, Date startDate, Date endDate, String serialNumber) {
-    try {
-      JcaContentSignerBuilder builder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
+    public X509Certificate generateCertificate(
+            Subject subject,
+            Issuer issuer,
+            Date startDate,
+            Date endDate,
+            String serialNumber,
+            List<String> extensions
+    ) {
+        try {
+            JcaContentSignerBuilder builder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
+            ContentSigner signer = builder.build(issuer.getPrivateKey());
 
-      ContentSigner signer = builder.build(issuer.getPrivateKey());
-      X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(issuer.getX500Name(),
-        new BigInteger(serialNumber),
-        startDate,
-        endDate,
-        subject.getX500Name(),
-        subject.getPublicKey());
+            X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
+                    issuer.getX500Name(),
+                    new BigInteger(serialNumber),
+                    startDate,
+                    endDate,
+                    subject.getX500Name(),
+                    subject.getPublicKey()
+            );
 
-      X509CertificateHolder certHolder = certGen.build(signer);
+            for (String ext : extensions) {
+                switch (ext) {
+                    case "CA":
+                        certGen.addExtension(
+                                org.bouncycastle.asn1.x509.Extension.basicConstraints,
+                                true,
+                                new BasicConstraints(true) // this is a CA
+                        );
+                        certGen.addExtension(
+                                org.bouncycastle.asn1.x509.Extension.keyUsage,
+                                true,
+                                new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign)
+                        );
+                        break;
 
-      JcaX509CertificateConverter certConverter = new JcaX509CertificateConverter();
-            certConverter = certConverter.setProvider(PROVIDER);
+                    case "SERVER":
+                        certGen.addExtension(
+                                org.bouncycastle.asn1.x509.Extension.keyUsage,
+                                true,
+                                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment)
+                        );
+                        certGen.addExtension(
+                                org.bouncycastle.asn1.x509.Extension.extendedKeyUsage,
+                                false,
+                                new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth)
+                        );
+                        break;
 
-      return certConverter.getCertificate(certHolder);
-    
-    } catch (CertificateEncodingException e) {
-      e.printStackTrace();
-    } catch (IllegalArgumentException e) {
-        e.printStackTrace();
-    } catch (IllegalStateException e) {
-        e.printStackTrace();
-    } catch (OperatorCreationException e) {
-        e.printStackTrace();
-    } catch (CertificateException e) {
-        e.printStackTrace();
+                    case "CLIENT":
+                        certGen.addExtension(
+                                org.bouncycastle.asn1.x509.Extension.extendedKeyUsage,
+                                false,
+                                new ExtendedKeyUsage(KeyPurposeId.id_kp_clientAuth)
+                        );
+                        break;
+                }
+            }
+
+            X509CertificateHolder certHolder = certGen.build(signer);
+            return new JcaX509CertificateConverter()
+                    .setProvider(PROVIDER)
+                    .getCertificate(certHolder);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
-    return null;
-}
   
 }
