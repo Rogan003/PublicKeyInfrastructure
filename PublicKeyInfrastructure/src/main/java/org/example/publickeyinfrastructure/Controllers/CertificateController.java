@@ -1,5 +1,7 @@
 package org.example.publickeyinfrastructure.Controllers;
 
+import jakarta.validation.Valid;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
@@ -8,10 +10,12 @@ import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateSer
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -105,9 +109,25 @@ public class CertificateController {
     }
 
     @PostMapping("/root-ca")
-    public ResponseEntity<?> createRootCA(@RequestBody IssuerDTO root) {
+    public ResponseEntity<?> createRootCA(@RequestBody @Valid CreateCertificateDTO request,
+                                          BindingResult bindingResult) {
         try {
-            Certificate rootCA = certificateService.createRootCA(root);
+            if (request == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Data for the end entity certificate is required");
+            }
+
+            if (bindingResult.hasErrors()) {
+                return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
+            }
+
+            // this may need to change, not sure if this is the right check
+            // but the point is if issuer != subject => can't issue this certificate
+            if (!Objects.equals(request.getIssuerCertificate().getIssuerDN(), request.getSubject().getX500Name())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Issuer and subject must be the same");
+            }
+            Certificate rootCA = certificateService.createRootCA(request);
             if (rootCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(rootCA);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -122,17 +142,19 @@ public class CertificateController {
     }
 
     @PostMapping("/intermediate-ca")
-    public ResponseEntity<?> createIntermediateCA(@RequestBody Map<String, IssuerDTO> request) {
+    public ResponseEntity<?> createIntermediateCA(@RequestBody @Valid CreateCertificateDTO request,
+                                                  BindingResult bindingResult) {
         try {
-            IssuerDTO root = request.get("root");
-            IssuerDTO intermediate = request.get("intermediate");
-            
-            if (root == null || intermediate == null) {
+            if (request == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Both 'root' and 'intermediate' issuers are required");
+                        .body("Data for the end entity certificate is required");
+            }
+
+            if (bindingResult.hasErrors()) {
+                return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
             }
             
-            Certificate intermediateCA = certificateService.createIntermediateCA(root, intermediate);
+            Certificate intermediateCA = certificateService.createIntermediateCA(request);
             if (intermediateCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(intermediateCA);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -146,5 +168,32 @@ public class CertificateController {
         }
     }
 
+    @PostMapping("/end-entity")
+    public ResponseEntity<?> createEndEntity(@RequestBody @Valid CreateCertificateDTO request,
+                                             BindingResult bindingResult) {
+        try {
+            if (request == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Data for the end entity certificate is required");
+            }
+
+            if (bindingResult.hasErrors()) {
+                return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
+            }
+
+            Certificate endEntityCertificate = certificateService.createEndEntityCertificate(request);
+
+            if (endEntityCertificate != null) {
+                CertificateDTO responseDTO = certificateService.convertToDTO(endEntityCertificate);
+                return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Failed to create end-entity certificate");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating end-entity certificate: " + e.getMessage());
+        }
+    }
 
 }

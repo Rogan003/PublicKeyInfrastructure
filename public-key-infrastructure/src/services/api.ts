@@ -3,7 +3,7 @@ import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO } from
 
 class ApiService {
   private api: AxiosInstance;
-  private baseURL = 'http://localhost:8080/api';
+  private baseURL = 'https://localhost:8443/api';
 
   constructor() {
     this.api = axios.create({
