@@ -2,18 +2,12 @@ package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import java.math.BigInteger;
 import java.security.Security;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.List;
 
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
-import org.bouncycastle.asn1.x509.KeyPurposeId;
-import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
@@ -56,40 +50,59 @@ public class CertificateGeneratorService {
             );
 
             for (String ext : extensions) {
-                switch (ext) {
-                    case "CA":
+                switch (ext.toUpperCase()) {
+                    case "BASIC_CA":
                         certGen.addExtension(
-                                org.bouncycastle.asn1.x509.Extension.basicConstraints,
+                                Extension.basicConstraints,
                                 true,
-                                new BasicConstraints(true) // this is a CA
-                        );
-                        certGen.addExtension(
-                                org.bouncycastle.asn1.x509.Extension.keyUsage,
-                                true,
-                                new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign)
+                                new BasicConstraints(true) // certificate authority
                         );
                         break;
 
-                    case "SERVER":
+                    case "BASIC_END":
                         certGen.addExtension(
-                                org.bouncycastle.asn1.x509.Extension.keyUsage,
+                                Extension.basicConstraints,
+                                true,
+                                new BasicConstraints(false) // end-entity
+                        );
+                        break;
+
+                    case "KEY_USAGE":
+                        certGen.addExtension(
+                                Extension.keyUsage,
                                 true,
                                 new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment)
                         );
+                        break;
+
+                    case "EXT_KEY_SERVER":
                         certGen.addExtension(
-                                org.bouncycastle.asn1.x509.Extension.extendedKeyUsage,
+                                Extension.extendedKeyUsage,
                                 false,
                                 new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth)
                         );
                         break;
 
-                    case "CLIENT":
+                    case "EXT_KEY_CLIENT":
                         certGen.addExtension(
-                                org.bouncycastle.asn1.x509.Extension.extendedKeyUsage,
+                                Extension.extendedKeyUsage,
                                 false,
                                 new ExtendedKeyUsage(KeyPurposeId.id_kp_clientAuth)
                         );
                         break;
+
+                    case "SAN_EXAMPLE":
+                        certGen.addExtension(
+                                Extension.subjectAlternativeName,
+                                false,
+                                new GeneralNames(
+                                        new GeneralName(GeneralName.dNSName, "example.com")
+                                )
+                        );
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unsupported extension: " + ext);
                 }
             }
 
