@@ -91,7 +91,7 @@ public class CertificateGeneratorService {
                         );
                         break;
 
-                    case "SAN_EXAMPLE":
+                    case "SAN":
                         certGen.addExtension(
                                 Extension.subjectAlternativeName,
                                 false,
@@ -100,9 +100,6 @@ public class CertificateGeneratorService {
                                 )
                         );
                         break;
-
-                    default:
-                        throw new IllegalArgumentException("Unsupported extension: " + ext);
                 }
             }
 

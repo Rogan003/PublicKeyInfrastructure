@@ -24,7 +24,7 @@ public class CreateCertificateDTO {
     private Date endDate;
     /**
      * Supported values:
-     * BASIC_CA, BASIC_END, KEY_USAGE, EXT_KEY_SERVER, EXT_KEY_CLIENT, SAN_EXAMPLE
+     * BASIC_CA, BASIC_END, KEY_USAGE, EXT_KEY_SERVER, EXT_KEY_CLIENT, SAN
      */
     @NotNull(message = "Extensions are required!")
     private List<String> extensions;

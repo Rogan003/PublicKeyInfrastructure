@@ -89,7 +89,7 @@ public class CertificateService {
       Subject subject = subjectOptional.get();
 
       if (subject == null) {
-          // subject = new Subject(issuerDTO.getPublicKey(), subjectDTO.getX500Name());
+          subject = subjectService.createSubject(newCertificate.getSubject());
       }
 
       if (isCertificateValid(issuerCertificate)) {
@@ -120,7 +120,7 @@ public class CertificateService {
       Subject subject = subjectOptional.get();
 
       if (subject == null) {
-          // subject = new Subject(issuerDTO.getPublicKey(), subjectDTO.getX500Name());
+          subject = subjectService.createSubject(newCertificate.getSubject());
       }
 
       if (isCertificateValid(issuerCertificate)) {
