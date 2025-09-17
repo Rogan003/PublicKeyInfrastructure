@@ -111,7 +111,7 @@ const Register: React.FC = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Registration</h2>
-        <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+        <form onSubmit={handleSubmit(onSubmit)} className="auth-form auth-form--two-col">
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
