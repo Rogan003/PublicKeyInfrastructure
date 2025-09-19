@@ -13,7 +13,7 @@ interface RegisterFormData {
   confirmPassword: string;
   name: string;
   surname: string;
-  organizationId: string | null;
+  organizationId: string;
 }
 
 function checkPasswordStrength(password: string): number {
@@ -100,12 +100,15 @@ const Register: React.FC = () => {
     setIsLoading(true);
     
     try {
+
+      const selectedOrganization = organisations.find(org => org.id.toString() === data.organizationId);
+
       const success = await registerUser({
         email: data.email,
         password: data.password,
         name: data.name,
         surname: data.surname,
-        organization: data.organizationId ? data.organizationId : null,
+        organization: selectedOrganization,
       });
  
       if (success.success) {
@@ -184,6 +187,9 @@ const Register: React.FC = () => {
             <label htmlFor="organizationId">Organization</label>
             <select
               id="organizationId"
+              {...register('organizationId', {
+                required: 'Organization is required',
+              })}
             >
               <option value="">Select organization</option>
               {organisations.map((org) => (
