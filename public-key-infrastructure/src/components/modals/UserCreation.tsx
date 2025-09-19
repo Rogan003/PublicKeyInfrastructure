@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { useAuth } from '../contexts/AuthContext';
+import { useForm, Controller } from 'react-hook-form';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import '../styles/Auth.css';
-import { apiService } from '../services/api';
-import type { Organisation } from '../types/auth';
+import { apiService } from '../../services/api';
+import type { Organisation } from '../../types/auth';
 
-interface RegisterFormData {
+interface UserCreationFormData {
   email: string;
   password: string;
   confirmPassword: string;
   name: string;
   surname: string;
-  organizationId: string | null;
+  organizationId: string;
+}
+
+
+
+interface UserCreationModalProps {
+  onClose: () => void;
+  onCreate: () => void;
 }
 
 function checkPasswordStrength(password: string): number {
@@ -66,19 +71,18 @@ function getPasswordStrengthInfo(strength: number) {
   }
 }
 
-
-const Register: React.FC = () => {
+const UserCreationModal: React.FC<UserCreationModalProps> = ({ onClose, onCreate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
-  const { register: registerUser } = useAuth();
-  const navigate = useNavigate();
+  const { registerCA } = useAuth();
 
   const {
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors },
-  } = useForm<RegisterFormData>();
+  } = useForm<UserCreationFormData>();
 
   const password = watch('password');
 
@@ -96,44 +100,62 @@ const Register: React.FC = () => {
     fetchOrganisations();
   }, []);
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: UserCreationFormData) => {
     setIsLoading(true);
     
+    console.log('Form data:', data);
+    console.log('Selected organization ID:', data.organizationId);
+    
+    const selectedOrganization = organisations.find(org => org.id.toString() === data.organizationId);
+    
+    if (!selectedOrganization) {
+      toast.error('Please select a valid organization');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      const success = await registerUser({
+      const success = await registerCA({
         email: data.email,
         password: data.password,
         name: data.name,
         surname: data.surname,
-        organization: data.organizationId ? data.organizationId : null,
+        organization: selectedOrganization,
       });
- 
+
       if (success.success) {
-        toast.success('Registration successful!');
-        navigate('/login');
+        toast.success('User created successfully!');
+        onCreate();
+        onClose();
       } else if (success.pwned) {
-        console.log('Registration failed, password is pwned. Breach count: ' + success.breachCount);
-        toast.error('Registration failed, password is pwned. Breach count: ' + success.breachCount);
+        console.log('User creation failed, password is pwned. Breach count: ' + success.breachCount);
+        toast.error('User creation failed, password is pwned. Breach count: ' + success.breachCount);
       } else {
-        toast.error('Registration failed, try again.');
+        toast.error('User creation failed, try again.');
       }
     } catch (error) {
-      toast.error('Registration failed, try again.');
+      toast.error('User creation failed, try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Registration</h2>
-        <form onSubmit={handleSubmit(onSubmit)} className="auth-form auth-form--two-col">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+    <div className="modal-backdrop" role="dialog" aria-modal="true">
+      <div className="modal-card surface-card">
+        <div className="modal-header">
+          <h3 className="modal-title">Create CA User</h3>
+          <button className="button-outlined" onClick={onClose} aria-label="Close">
+            <span className="material-symbols-outlined" aria-hidden>close</span>
+            Close
+          </button>
+        </div>
+        <form className="modal-content form-grid" onSubmit={handleSubmit(onSubmit)}>
+          <h4>User Information</h4>
+          <label>
+            <span className="meta-label">Email</span>
             <input
               type="email"
-              id="email"
               {...register('email', {
                 required: 'Email is required',
                 pattern: {
@@ -144,13 +166,12 @@ const Register: React.FC = () => {
               placeholder="Enter email"
             />
             {errors.email && <span className="error">{errors.email.message}</span>}
-          </div>
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="name">Name</label>
+          <label>
+            <span className="meta-label">Name</span>
             <input
               type="text"
-              id="name"
               {...register('name', {
                 required: 'Name is required',
                 minLength: {
@@ -161,13 +182,12 @@ const Register: React.FC = () => {
               placeholder="Enter name"
             />
             {errors.name && <span className="error">{errors.name.message}</span>}
-          </div>
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="surname">Surname</label>
+          <label>
+            <span className="meta-label">Surname</span>
             <input
               type="text"
-              id="surname"
               {...register('surname', {
                 required: 'Surname is required',
                 minLength: {
@@ -178,28 +198,37 @@ const Register: React.FC = () => {
               placeholder="Enter surname"
             />
             {errors.surname && <span className="error">{errors.surname.message}</span>}
-          </div>
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="organizationId">Organization</label>
-            <select
-              id="organizationId"
-            >
-              <option value="">Select organization</option>
-              {organisations.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name} - {org.unit} ({org.country})
-                </option>
-              ))}
-            </select>
+          <label>
+            <span className="meta-label">Organization</span>
+            <Controller
+              name="organizationId"
+              control={control}
+              rules={{ required: 'Organization is required' }}
+              render={({ field }) => (
+                <select
+                  className="m3-select"
+                  {...field}
+                  value={field.value || ''}
+                >
+                  <option value="">Select organization</option>
+                  {organisations.map((org) => (
+                    <option key={org.id} value={org.id.toString()}>
+                      {org.name} - {org.unit} ({org.country})
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
             {errors.organizationId && <span className="error">{errors.organizationId.message}</span>}
-          </div>
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <h4>Security</h4>
+          <label>
+            <span className="meta-label">Password</span>
             <input
               type="password"
-              id="password"
               {...register('password', {
                 required: 'Password is required',
                 minLength: {
@@ -238,13 +267,12 @@ const Register: React.FC = () => {
               </div>
             )}
             {errors.password && <span className="error">{errors.password.message}</span>}
-          </div>
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm password</label>
+          <label>
+            <span className="meta-label">Confirm Password</span>
             <input
               type="password"
-              id="confirmPassword"
               {...register('confirmPassword', {
                 required: 'Confirm password is required',
                 validate: (value) =>
@@ -253,21 +281,20 @@ const Register: React.FC = () => {
               placeholder="Confirm password"
             />
             {errors.confirmPassword && <span className="error">{errors.confirmPassword.message}</span>}
+          </label>
+
+          <div className="modal-actions">
+            <button type="button" className="button-outlined" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="button-primary" disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create User'}
+            </button>
           </div>
-
-          <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? 'Registration...' : 'Register'}
-          </button>
         </form>
-
-        <div className="auth-links">
-          <p>
-            Already have an account? <Link to="/login">Login</Link>
-          </p>
-        </div>
       </div>
     </div>
   );
 };
 
-export default Register;
+export default UserCreationModal;

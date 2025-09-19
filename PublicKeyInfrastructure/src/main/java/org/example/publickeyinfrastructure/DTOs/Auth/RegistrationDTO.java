@@ -1,12 +1,16 @@
 package org.example.publickeyinfrastructure.DTOs.Auth;
 
-import lombok.Data;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.OrganisationDTO;
 
-@Data
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class RegistrationDTO {
     private String email;
     private String password;
     private String name;
     private String surname;
-    private String organization;
+    private OrganisationDTO organization;
 }
