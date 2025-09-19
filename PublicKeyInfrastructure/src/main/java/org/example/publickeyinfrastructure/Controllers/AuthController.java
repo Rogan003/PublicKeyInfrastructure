@@ -43,6 +43,16 @@ public class AuthController {
                 .body(new AuthResponseDTO(null, null, "Registration failed: " + e.getMessage(), false, null, new PwnedDTO(false, 0)));
         }
     }
+
+    @PostMapping("/register-ca")
+    public ResponseEntity<AuthResponseDTO> registerCAUser(@RequestBody RegistrationDTO registrationDTO) {
+        try {
+            AuthResponseDTO response = authService.registerCaUser(registrationDTO);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new AuthResponseDTO(null, null, "Registration failed: " + e.getMessage(), false, null, new PwnedDTO(false, 0)));
+        }
+    }
     
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> loginUser(@RequestBody LoginDTO loginDTO) {

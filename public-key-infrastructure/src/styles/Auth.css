@@ -84,6 +84,30 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--m3-error) 18%, transparent);
 }
 
+/* Match select styling to inputs for consistent look */
+.form-group select {
+  padding: 14px 16px;
+  border: 1.5px solid var(--m3-surface-variant);
+  border-radius: var(--shape-md);
+  font-size: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  background: color-mix(in srgb, var(--m3-surface) 80%, transparent);
+  color: var(--m3-on-surface);
+  appearance: none;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--m3-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--m3-primary) 18%, transparent);
+  background: var(--m3-surface-container);
+}
+
+.form-group select.error {
+  border-color: var(--m3-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--m3-error) 18%, transparent);
+}
+
 .error {
   color: var(--m3-on-error-container);
   background: var(--m3-error-container);

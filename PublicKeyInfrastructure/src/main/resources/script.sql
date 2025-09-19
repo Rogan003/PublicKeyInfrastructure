@@ -1,28 +1,38 @@
 -- pass for everyone is: (CspCsp567)
-INSERT INTO users (email, password, role, user_type, name, surname, organization, enabled, created_at, email_verified_at)
+-- First insert organizations to get their IDs
+INSERT INTO organisations (name, unit, country)
 VALUES
-    -- ADMIN
+    ('TechCorp Solutions', 'IT Department', 'Serbia'),
+    ('Global Finance Ltd', 'Security Division', 'Germany'),
+    ('Healthcare Systems Inc', 'Digital Infrastructure', 'United States'),
+    ('Educational Network', 'Technology Services', 'France'),
+    ('Government Services', 'Digital Security', 'United Kingdom');
+
+-- Insert users with proper column names and organisation_id references
+INSERT INTO users (email, password, role, user_type, name, surname, organisation_id, enabled, created_at)
+VALUES
+    -- ADMIN (no organisation required)
     ('admin@example.com',
      '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
      'ADMIN',
-     'User',
-     '-', '-', '-', true, NOW(), NULL),
+     'RegularUser',
+     'Admin', 'Admin', NULL, true, NOW()),
 
     -- Certificate Authority 1
     -- password = ca1pass
     ('ca1@example.com',
      '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
      'CERTIFICATE_AUTHORITY',
-     'User',
-     '-', '-', '-', true, NOW(), NULL),
+     'RegularUser',
+     'John', 'Doe', 1, true, NOW()),
 
     -- Certificate Authority 2
     -- password = ca2pass
     ('ca2@example.com',
      '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
      'CERTIFICATE_AUTHORITY',
-     'User',
-     '-', '-', '-', true, NOW(), NULL),
+     'RegularUser',
+     'Jane', 'Smith', 2, true, NOW()),
 
     -- Regular User 1
     -- password = user1pass
@@ -30,7 +40,7 @@ VALUES
      '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
      'REGULAR_USER',
      'RegularUser',
-     'John', 'Doe', 'Org1', true, NOW(), NULL),
+     'John', 'Doe', 1, true, NOW()),
 
     -- Regular User 2
     -- password = user2pass
@@ -38,12 +48,12 @@ VALUES
      '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
      'REGULAR_USER',
      'RegularUser',
-     'Jane', 'Smith', 'Org2', true, NOW(), NULL),
+     'Jane', 'Smith', 2, true, NOW()),
 
     -- Regular User 3
     -- password = user3pass
-    ('user3@example.com',
-     '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
+    ('joksovic.veljko@gmail.com',
+     '$argon2id$v=19$m=16384,t=2,p=1$2YRB0ZtQRuiusvSnS45sIQ$9lu4DMWa6uq4DJQUooEjp+vTm/fUmRG2qnvjVPjW4Z8',
      'REGULAR_USER',
      'RegularUser',
-     'Alice', 'Johnson', 'Org3', true, NOW(), NULL);
+     'Veljko', 'Joksovic', 3, true, NOW());

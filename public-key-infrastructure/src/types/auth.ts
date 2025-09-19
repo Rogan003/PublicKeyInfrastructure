@@ -47,3 +47,10 @@ export interface JwtPayload {
   exp: number;
   iat: number;
 }
+
+export interface Organisation {
+  id: number;
+  name: string;
+  unit: string;
+  country: string;
+}

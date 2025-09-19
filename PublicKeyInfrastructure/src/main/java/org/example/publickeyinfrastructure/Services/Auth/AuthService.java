@@ -7,7 +7,7 @@ import org.example.publickeyinfrastructure.DTOs.Auth.LoginDTO;
 import org.example.publickeyinfrastructure.DTOs.Auth.PwnedDTO;
 import org.example.publickeyinfrastructure.DTOs.Auth.RegistrationDTO;
 import org.example.publickeyinfrastructure.DTOs.Auth.TokenRefreshDTO;
-import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerificationResult;
+import org.example.publickeyinfrastructure.Entities.User.Role;
 import org.example.publickeyinfrastructure.Entities.User.User;
 import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.example.publickeyinfrastructure.Repositories.UserRepository;
@@ -52,7 +52,7 @@ public class AuthService  {
             passwordService.hashPassword(registrationDTO.getPassword()),
             registrationDTO.getName(),
             registrationDTO.getSurname(),
-            registrationDTO.getOrganization()            
+            registrationDTO.getOrganization() != null ? registrationDTO.getOrganization().toEntity(registrationDTO.getOrganization()) : null            
         );
         
         // Persist user first to ensure ID is generated and relationships are valid
@@ -70,6 +70,42 @@ public class AuthService  {
             null,
             null,
             "User registered successfully. Please check your email to verify your account.",
+            true,
+            savedUser.getEmail(),
+            new PwnedDTO(false, 0)
+        );
+    }
+
+    public AuthResponseDTO registerCaUser(RegistrationDTO registrationDTO) {
+        // Check if user already exists
+        if (userRepository.existsByEmail(registrationDTO.getEmail())) {
+            return new AuthResponseDTO(null, null, "User with this email already exists", false, null, new PwnedDTO(false, 0));
+        }
+
+        // Check if password is pwned
+        if (passwordService.isPasswordPwned(registrationDTO.getPassword())) {
+            int breachCount = passwordService.getPasswordBreachCount(registrationDTO.getPassword());
+            return new AuthResponseDTO(null, null, "Password is pwned, breach count: " + breachCount, false, null, new PwnedDTO(true, breachCount));
+        }
+        
+        // Create new user
+        RegularUser newUser = RegularUser.caUser(
+            registrationDTO.getEmail(),
+            passwordService.hashPassword(registrationDTO.getPassword()),
+            registrationDTO.getName(),
+            registrationDTO.getSurname(),
+            registrationDTO.getOrganization().toEntity(registrationDTO.getOrganization())            
+        );
+        
+        // Persist user first to ensure ID is generated and relationships are valid
+        newUser.setRole(Role.CERTIFICATE_AUTHORITY);
+        System.out.println("New user: " + newUser.getRole());
+        User savedUser = userRepository.save(newUser);
+         
+        return new AuthResponseDTO(
+            null,
+            null,
+            "CA user registered successfully.",
             true,
             savedUser.getEmail(),
             new PwnedDTO(false, 0)
