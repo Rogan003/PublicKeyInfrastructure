@@ -148,13 +148,6 @@
   z-index: 1000;
 }
 
-.modal-card {
-  width: 100%;
-  max-width: 640px;
-  border-radius: var(--shape-xl);
-  box-shadow: var(--elev-2);
-  border: 1px solid color-mix(in srgb, var(--m3-outline) 12%, transparent);
-}
 
 .modal-header {
   display: flex;
@@ -208,13 +201,164 @@
   margin: 8px 0 4px 0;
   grid-column: 1 / -1;
 }
-.form-grid input[type="text"],
-.form-grid input[type="date"] {
+
+/* Two-column form layout for Create Certificate modal */
+.form-grid-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-bottom-section {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-bottom-section label {
+  display: grid;
+  gap: 8px;
+}
+
+/* Form input styles for two-column layout */
+.form-column input[type="text"],
+.form-column input[type="date"],
+.form-column input[type="email"],
+.form-column input[type="password"],
+.form-bottom-section input[type="text"],
+.form-bottom-section input[type="date"],
+.form-bottom-section input[type="email"],
+.form-bottom-section input[type="password"] {
   padding: 12px 14px;
   border: 1.5px solid var(--m3-surface-variant);
   border-radius: var(--shape-md);
   background: var(--m3-surface-container);
   color: var(--m3-on-surface);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-column input[type="text"]:focus,
+.form-column input[type="date"]:focus,
+.form-column input[type="email"]:focus,
+.form-column input[type="password"]:focus,
+.form-bottom-section input[type="text"]:focus,
+.form-bottom-section input[type="date"]:focus,
+.form-bottom-section input[type="email"]:focus,
+.form-bottom-section input[type="password"]:focus {
+  outline: none;
+  border-color: var(--m3-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--m3-primary) 20%, transparent);
+}
+
+.form-column .m3-select,
+.form-bottom-section .m3-select {
+  padding: 12px 14px;
+  border: 1.5px solid var(--m3-surface-variant);
+  border-radius: var(--shape-md);
+  background: var(--m3-surface-container);
+  color: var(--m3-on-surface);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.form-column .m3-select:focus,
+.form-bottom-section .m3-select:focus {
+  outline: none;
+  border-color: var(--m3-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--m3-primary) 20%, transparent);
+}
+
+/* Uniform label styling */
+.form-column label,
+.form-bottom-section label {
+  display: grid;
+  gap: 8px;
+}
+
+.form-column .meta-label,
+.form-bottom-section .meta-label {
+  font-weight: 600;
+  color: var(--m3-on-surface-variant);
+  font-size: 14px;
+}
+
+/* Consistent input heights */
+.form-column input,
+.form-column select,
+.form-bottom-section input,
+.form-bottom-section select {
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+/* Smooth transitions for conditional elements */
+.form-bottom-section label {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Enhanced modal card for better spacing */
+.modal-card {
+  width: 100%;
+  max-width: 720px;
+  border-radius: var(--shape-xl);
+  box-shadow: var(--elev-2);
+  border: 1px solid color-mix(in srgb, var(--m3-outline) 12%, transparent);
+}
+
+.form-grid input[type="text"],
+.form-grid input[type="date"],
+.form-grid input[type="email"],
+.form-grid input[type="password"] {
+  padding: 12px 14px;
+  border: 1.5px solid var(--m3-surface-variant);
+  border-radius: var(--shape-md);
+  background: var(--m3-surface-container);
+  color: var(--m3-on-surface);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-grid input[type="text"]:focus,
+.form-grid input[type="date"]:focus,
+.form-grid input[type="email"]:focus,
+.form-grid input[type="password"]:focus {
+  outline: none;
+  border-color: var(--m3-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--m3-primary) 20%, transparent);
+}
+
+.form-grid .m3-select {
+  padding: 12px 14px;
+  border: 1.5px solid var(--m3-surface-variant);
+  border-radius: var(--shape-md);
+  background: var(--m3-surface-container);
+  color: var(--m3-on-surface);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.form-grid .m3-select:focus {
+  outline: none;
+  border-color: var(--m3-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--m3-primary) 20%, transparent);
+}
+
+.form-grid .error {
+  color: var(--m3-error);
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
 }
 .modal-actions {
   display: flex;
@@ -227,6 +371,11 @@
 @media (max-width: 720px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .form-grid-two-columns {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 

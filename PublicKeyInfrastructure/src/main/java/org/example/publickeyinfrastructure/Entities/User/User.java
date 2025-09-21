@@ -1,6 +1,8 @@
 package org.example.publickeyinfrastructure.Entities.User;
 
 import jakarta.persistence.*;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +12,7 @@ import lombok.Setter;
 @Setter
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "user_type")
-public class User {
+public abstract class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

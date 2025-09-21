@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import '../styles/Auth.css';
+import { apiService } from '../services/api';
+import type { Organisation } from '../types/auth';
 
 interface RegisterFormData {
   email: string;
@@ -11,7 +13,7 @@ interface RegisterFormData {
   confirmPassword: string;
   name: string;
   surname: string;
-  organization: string;
+  organizationId: string;
 }
 
 function checkPasswordStrength(password: string): number {
@@ -67,6 +69,7 @@ function getPasswordStrengthInfo(strength: number) {
 
 const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
 
@@ -79,16 +82,33 @@ const Register: React.FC = () => {
 
   const password = watch('password');
 
+  useEffect(() => {
+    const fetchOrganisations = async () => {
+      try {
+        const response = await apiService.getOrganisations();
+        setOrganisations(response);
+      } catch (error) {
+        console.error('Failed to fetch organisations:', error);
+        toast.error('Failed to load organisations');
+      }
+    };
+
+    fetchOrganisations();
+  }, []);
+
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     
     try {
+
+      const selectedOrganization = organisations.find(org => org.id.toString() === data.organizationId);
+
       const success = await registerUser({
         email: data.email,
         password: data.password,
         name: data.name,
         surname: data.surname,
-        organization: data.organization,
+        organization: selectedOrganization,
       });
  
       if (success.success) {
@@ -164,16 +184,21 @@ const Register: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="organization">Organization</label>
-            <input
-              type="text"
-              id="organization"
-              {...register('organization', {
+            <label htmlFor="organizationId">Organization</label>
+            <select
+              id="organizationId"
+              {...register('organizationId', {
                 required: 'Organization is required',
               })}
-              placeholder="Enter organization"
-            />
-            {errors.organization && <span className="error">{errors.organization.message}</span>}
+            >
+              <option value="">Select organization</option>
+              {organisations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name} - {org.unit} ({org.country})
+                </option>
+              ))}
+            </select>
+            {errors.organizationId && <span className="error">{errors.organizationId.message}</span>}
           </div>
 
           <div className="form-group">

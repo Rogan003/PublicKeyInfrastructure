@@ -7,27 +7,43 @@ interface CreateCertificateModalProps {
 }
 
 const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose, onCreate }) => {
-  const [subject, setSubject] = useState('');
-  const [issuer, setIssuer] = useState('');
-  const [validFrom, setValidFrom] = useState('');
-  const [validTo, setValidTo] = useState('');
-  const [basicConstraints, setBasicConstraints] = useState('');
-  const [keyUsage, setKeyUsage] = useState('');
-  const [extendedKeyUsage, setExtendedKeyUsage] = useState('');
+  const [commonName, setCommonName] = useState('');
+  const [givenName, setGivenName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [organizationUnit, setOrganizationUnit] = useState('');
+  const [country, setCountry] = useState('');
+  const [email, setEmail] = useState('');
+  const [owner, setOwner] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [certificateType, setCertificateType] = useState('RootCA');
+  const [issuerCA, setIssuerCA] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject || !issuer || !validFrom || !validTo) return;
+    if (!commonName || !givenName || !surname || !organizationName || !startDate || !endDate) return;
+    if (certificateType !== 'RootCA' && !issuerCA) return;
+    
     const newCert: CertificateItem = {
       id: `${Date.now()}`,
-      subject,
-      issuer,
-      validFrom,
-      validTo,
-      status: 'Valid',
-      basicConstraints ,
-      keyUsage,
-      extendedKeyUsage
+      subject: `${givenName} ${surname} (${commonName})`,
+      issuer: certificateType === 'RootCA' ? 'Self-signed' : issuerCA,
+      commonName,
+      givenName,
+      surname,
+      organizationName,
+      organizationUnit,
+      country,
+      email,
+      owner,
+      validFrom: startDate,
+      validTo: endDate,
+      status: 'Pending',
+      basicConstraints: '',
+      keyUsage: '',
+      extendedKeyUsage: '',
+      certificateType
     };
     onCreate(newCert);
     onClose();
@@ -37,55 +53,151 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal-card surface-card">
         <div className="modal-header">
-          <h3 className="modal-title">Create certificate</h3>
+          <h3 className="modal-title">Create Certificate</h3>
           <button className="button-outlined" onClick={onClose} aria-label="Close">
             <span className="material-symbols-outlined" aria-hidden>close</span>
             Close
           </button>
         </div>
-        <form className="modal-content form-grid" onSubmit={handleSubmit}>
-          <h4>Basic</h4>
-          <label>
-            <span className="meta-label">Subject</span>
-            <select className="m3-select" value={subject} onChange={(e) => setSubject(e.target.value)}>
-              <option value="User">User</option>
-              <option value="Server">Server</option>
-              <option value="Client">Client</option>
-            </select>
-          </label>
-          <label>
-            <span className="meta-label">Issuer CA</span>
-            <select className="m3-select" value={issuer} onChange={(e) => setIssuer(e.target.value)}>
-              <option value="Certificate 1">Certificate 1</option>
-              <option value="Certificate 2">Certificate 2</option>
-              <option value="Certificate 3">Certificate 3</option>
-            </select>
-          </label>
-          <label>
-            <span className="meta-label">Valid from</span>
-            <input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
-          </label>
-          <label>
-            <span className="meta-label">Valid to</span>
-            <input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
-          </label>
-          <h4>Extensions</h4>
-          <label>
-            <span className="meta-label">Basic constraints</span>
-            <input type="text" value={basicConstraints} onChange={(e) => setBasicConstraints(e.target.value)} placeholder='Add basic constraints'/>
-          </label>
-          <label>
-            <span className="meta-label">Key usage</span>
-            <input type="text" value={keyUsage} onChange={(e) => setKeyUsage(e.target.value)} placeholder='Add key usage'/>
-          </label>
-          <label>
-            <span className="meta-label">Extended key usage</span>
-            <input type="text" value={extendedKeyUsage} onChange={(e) => setExtendedKeyUsage(e.target.value)} placeholder='Add extended key usage'/>
-          </label>
+        <form className="modal-content" onSubmit={handleSubmit}>
+          <div className="form-grid-two-columns">
+            <div className="form-column">
+              <label>
+                <span className="meta-label">Common name</span>
+                <input 
+                  type="text" 
+                  value={commonName} 
+                  onChange={(e) => setCommonName(e.target.value)} 
+                  placeholder="Enter common name"
+                  required
+                />
+              </label>
+              <label>
+                <span className="meta-label">Given name</span>
+                <input 
+                  type="text" 
+                  value={givenName} 
+                  onChange={(e) => setGivenName(e.target.value)} 
+                  placeholder="Enter given name"
+                  required
+                />
+              </label>
+              <label>
+                <span className="meta-label">Organization unit</span>
+                <input 
+                  type="text" 
+                  value={organizationUnit} 
+                  onChange={(e) => setOrganizationUnit(e.target.value)} 
+                  placeholder="Enter organization unit"
+                />
+              </label>
+              <label>
+                <span className="meta-label">Email</span>
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  placeholder="Enter email address"
+                />
+              </label>
+              <label>
+                <span className="meta-label">Start Date</span>
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-column">
+              <label>
+                <span className="meta-label">Surname</span>
+                <input 
+                  type="text" 
+                  value={surname} 
+                  onChange={(e) => setSurname(e.target.value)} 
+                  placeholder="Enter surname"
+                  required
+                />
+              </label>
+              <label>
+                <span className="meta-label">Organization name</span>
+                <input 
+                  type="text" 
+                  value={organizationName} 
+                  onChange={(e) => setOrganizationName(e.target.value)} 
+                  placeholder="Enter organization name"
+                  required
+                />
+              </label>
+              <label>
+                <span className="meta-label">Country</span>
+                <input 
+                  type="text" 
+                  value={country} 
+                  onChange={(e) => setCountry(e.target.value)} 
+                  placeholder="Enter country"
+                />
+              </label>
+              <label>
+                <span className="meta-label">Owner</span>
+                <select className="m3-select" value={owner} onChange={(e) => setOwner(e.target.value)}>
+                  <option value="">Select owner</option>
+                  <option value="owner">owner - organisation</option>
+                </select>
+              </label>
+              <label>
+                <span className="meta-label">End Date</span>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  required
+                />
+              </label>
+            </div>
+          </div>
+          
+          <div className="form-bottom-section">
+            <label>
+              <span className="meta-label">Certificate type</span>
+              <select 
+                className="m3-select" 
+                value={certificateType} 
+                onChange={(e) => {
+                  setCertificateType(e.target.value);
+                  if (e.target.value === 'RootCA') {
+                    setIssuerCA('');
+                  }
+                }}
+              >
+                <option value="RootCA">RootCA</option>
+                <option value="IntermediateCA">IntermediateCA</option>
+                <option value="EndEntity">EndEntity</option>
+              </select>
+            </label>
+            
+            {certificateType !== 'RootCA' && (
+              <label>
+                <span className="meta-label">Issuer CA</span>
+                <select 
+                  className="m3-select" 
+                  value={issuerCA} 
+                  onChange={(e) => setIssuerCA(e.target.value)}
+                  required
+                >
+                  <option value="">Select issuer CA</option>
+                  <option value="Root CA Certificate">Root CA Certificate</option>
+                  <option value="Intermediate CA 1">Intermediate CA 1</option>
+                  <option value="Intermediate CA 2">Intermediate CA 2</option>
+                  <option value="Company Root CA">Company Root CA</option>
+                </select>
+              </label>
+            )}
+          </div>
+          
           <div className="modal-actions">
-            <button type="button" className="button-outlined" onClick={onClose}>
-              Cancel
-            </button>
             <button type="submit" className="button-primary">
               Create
             </button>

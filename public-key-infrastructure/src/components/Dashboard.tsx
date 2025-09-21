@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import type { CertificateItem } from '../types/certificates';
 import CertificateDetailsModal from './modals/CertificateDetails';
 import CreateCertificateModal from './modals/CreateCertificate';
+import UserCreationModal from './modals/UserCreation';
+import CreateOrganisationModal from './modals/CreateOrganisation';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -21,7 +23,8 @@ const Dashboard: React.FC = () => {
       status: 'Valid',
       basicConstraints: 'CA',
       keyUsage: 'Digital Signature',
-      extendedKeyUsage: 'Server Auth'
+      extendedKeyUsage: 'Server Auth',
+      certificateType: 'Root CA'
     },
     {
       id: '2',
@@ -32,7 +35,8 @@ const Dashboard: React.FC = () => {
       status: 'Expired',
       basicConstraints: 'CA',
       keyUsage: 'Digital Signature',
-      extendedKeyUsage: 'Server Auth'
+      extendedKeyUsage: 'Server Auth',
+      certificateType: 'Root CA'
     },
     {
       id: '3',
@@ -43,11 +47,14 @@ const Dashboard: React.FC = () => {
       status: 'Valid',
       basicConstraints: 'CA',
       keyUsage: 'Digital Signature',
-      extendedKeyUsage: 'Server Auth'
+      extendedKeyUsage: 'Server Auth',
+      certificateType: 'Intermediate CA'
     }
   ]);
   const [detailsOpen, setDetailsOpen] = useState<CertificateItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [userCreationOpen, setUserCreationOpen] = useState(false);
+  const [organisationCreationOpen, setOrganisationCreationOpen] = useState(false);
 
   const totalValid = useMemo(() => certificates.filter(c => c.status === 'Valid').length, [certificates]);
   const totalRevoked = useMemo(() => certificates.filter(c => c.status === 'Revoked').length, [certificates]);
@@ -62,12 +69,18 @@ const Dashboard: React.FC = () => {
     setCreateOpen(true);
   };
 
-  const handleCreateKeyPair = () => {
-    toast('Create Key Pair – not implemented yet');
-  };
 
   const handleAddUser = () => {
-    toast('Add CA User – not implemented yet');
+    setUserCreationOpen(true);
+  };
+
+  const handleCreateOrganisation = () => {
+    setOrganisationCreationOpen(true);
+  };
+
+  const handleOrganisationCreated = () => {
+    toast.success('Organisation created successfully');
+    setOrganisationCreationOpen(false);
   };
 
   const handleView = (cert: CertificateItem) => {
@@ -118,14 +131,18 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Certificate
           </button>
-          <button className="button-tonal" onClick={handleCreateKeyPair}>
-            <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
-            Create Key Pair
-          </button>
           <button className="button-tonal" onClick={handleAddUser}>
             <span className="material-symbols-outlined" aria-hidden>person_add</span>
             Add CA User
           </button>
+          {/* <button className="button-tonal" onClick={handleCreateKeyPair}>
+            <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
+            Create Key Pair
+          </button> */}
+           <button className="button-tonal" onClick={handleCreateOrganisation}>
+            <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
+            Create Organisation
+          </button> 
         </div>
 
         <div className="dashboard-card">
@@ -156,7 +173,7 @@ const Dashboard: React.FC = () => {
                     <span className="material-symbols-outlined" aria-hidden>download</span>
                     Download 
                   </button>
-                  <button className="button-danger" onClick={() => handleDelete(cert)}>
+                  <button disabled={user.role !== 'ADMIN'} className="button-danger" onClick={() => handleDelete(cert)}>
                     <span className="material-symbols-outlined" aria-hidden>delete</span>
                     Revoke
                   </button>
@@ -171,6 +188,12 @@ const Dashboard: React.FC = () => {
       )}
       {createOpen && (
         <CreateCertificateModal onClose={() => setCreateOpen(false)} onCreate={(c) => setCertificates(prev => [c, ...prev])} />
+      )}
+      {userCreationOpen && (
+        <UserCreationModal onClose={() => setUserCreationOpen(false)} onCreate={() => {}} />
+      )}
+      {organisationCreationOpen && (
+        <CreateOrganisationModal onClose={() => setOrganisationCreationOpen(false)} onCreate={handleOrganisationCreated} />
       )}
     </div>
   );

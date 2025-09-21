@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: any) => Promise<registerResponse>;
+  registerCA: (userData: any) => Promise<registerResponse>;
   logout: () => void;
 }
 
@@ -105,6 +106,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const registerCA = async (userData: any): Promise<registerResponse> => {
+    try {
+      console.log(userData);
+      const response = await apiService.registerCA(userData);
+      return { success: response.success, pwned: response.pwnedPassword.pwned, breachCount: response.pwnedPassword.breachCount };
+    } catch (error) {
+      return { success: false, pwned: false, breachCount: 0 };
+    }
+  };
+
   const logout = () => {
     apiService.logout();
     setUser(null);
@@ -114,6 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated: !!user,
     isLoading,
+    registerCA,
     login,
     register,
     logout,

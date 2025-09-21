@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
-import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO } from '../types/auth';
+import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation } from '../types/auth';
 
 class ApiService {
   private api: AxiosInstance;
@@ -58,6 +58,16 @@ class ApiService {
     );
   }
 
+  async getOrganisations(): Promise<Organisation[]> {
+    const response: AxiosResponse<Organisation[]> = await this.api.get('/organisations');
+    return response.data;
+  }
+
+  async createOrganisation(organisation: Omit<Organisation, 'id'>): Promise<Organisation> {
+    const response: AxiosResponse<Organisation> = await this.api.post('/organisations', organisation);
+    return response.data;
+  }
+
   // Auth endpoints
   async login(credentials: LoginDTO): Promise<AuthResponseDTO> {
     const response: AxiosResponse<AuthResponseDTO> = await this.api.post('/auth/login', credentials);
@@ -66,6 +76,11 @@ class ApiService {
 
   async register(userData: RegistrationDTO): Promise<AuthResponseDTO> {
     const response: AxiosResponse<AuthResponseDTO> = await this.api.post('/auth/register', userData);
+    return response.data;
+  }
+
+  async registerCA(userData: RegistrationDTO): Promise<AuthResponseDTO> {
+    const response: AxiosResponse<AuthResponseDTO> = await this.api.post('/auth/register-ca', userData);
     return response.data;
   }
 
