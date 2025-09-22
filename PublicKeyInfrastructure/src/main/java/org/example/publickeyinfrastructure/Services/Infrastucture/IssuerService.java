@@ -44,7 +44,7 @@ public class IssuerService {
         builder.addRDN(BCStyle.E, issuerDTO.getEmail());
       }
 
-      Issuer issuer = new Issuer(keyPair.getPrivate(), keyPair.getPublic(), builder.build());
+      Issuer issuer = new Issuer(keyPair.getPrivate(), keyPair.getPublic(), builder.build(), null);
       return issuerRepository.save(issuer);
     } catch (Exception e) {
       e.printStackTrace();

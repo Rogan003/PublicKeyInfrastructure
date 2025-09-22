@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.example.publickeyinfrastructure.Utils.KeyUtil;
 
-import javax.crypto.SecretKey;
-
 @Getter
 @Setter @Entity
 @Table(name = "organisations")
@@ -24,9 +22,6 @@ public class Organisation {
   @Column(name = "country")
   private String country;
 
-  @Transient
-  private SecretKey key;
-
   @Lob
   @Column(name = "private_key")
   private byte[] keyBytes;
@@ -41,11 +36,19 @@ public class Organisation {
     this.country = country;
 
     try {
-        this.key = KeyUtil.generateAes256Key();
-        this.keyBytes = key.getEncoded();
+        this.keyBytes = KeyUtil.encryptPrivateKey(KeyUtil.generateAes256Key(), KeyUtil.getMasterKey());
     } catch (Exception e) {
         e.printStackTrace();
     }
+  }
+
+  public byte[] getKeyBytes() {
+      try {
+          return KeyUtil.decryptPrivateKey(this.keyBytes, KeyUtil.getMasterKey());
+      } catch (Exception e) {
+          e.printStackTrace();
+          return null;
+      }
   }
 
 }
