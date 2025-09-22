@@ -1,13 +1,11 @@
 package org.example.publickeyinfrastructure.Entities.Infrastructure;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import org.example.publickeyinfrastructure.Utils.KeyUtil;
+
+import javax.crypto.SecretKey;
 
 @Getter
 @Setter @Entity
@@ -26,6 +24,13 @@ public class Organisation {
   @Column(name = "country")
   private String country;
 
+  @Transient
+  private SecretKey key;
+
+  @Lob
+  @Column(name = "private_key")
+  private byte[] keyBytes;
+
   // Default constructor required by JPA
   public Organisation() {}
 
@@ -34,6 +39,13 @@ public class Organisation {
     this.name = name;
     this.unit = unit;
     this.country = country;
+
+    try {
+        this.key = KeyUtil.generateAes256Key();
+        this.keyBytes = key.getEncoded();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
   }
 
 }

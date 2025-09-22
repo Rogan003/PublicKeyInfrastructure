@@ -208,12 +208,8 @@ public class CertificateService {
           return true;
       }
       else {
-          Issuer issuer = certificate.getIssuer();
-          // should we only check the certificate that issued this certificate
-          // or all certificates from the issuer?
-          List<Certificate> issuerCertificates = findByIssuerDN(issuer.getX500NameString());
-          return issuerCertificates.stream()
-                  .anyMatch(this::isCertificateValid);
+          Certificate parentCertificate = certificate.getParentCertificate();
+          return isCertificateValid(parentCertificate);
       }
   }
 }
