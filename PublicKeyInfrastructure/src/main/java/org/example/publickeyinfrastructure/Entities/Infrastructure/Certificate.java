@@ -54,12 +54,17 @@ public class Certificate {
   @Lob
   @Column(name = "x509_certificate")
   private byte[] x509CertificateBytes;
+
+  @ManyToOne
+  @JoinColumn(name = "parent_certificate_id")
+  private Certificate parentCertificate;
   
   @Transient
   private X509Certificate x509Certificate;
 
   public Certificate(Subject subject, Issuer issuer, String serialNumber, 
-                    Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType) {
+                    Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
+                     Certificate parentCertificate) {
       this.subject = subject;
       this.issuer = issuer;
       this.serialNumber = serialNumber;
@@ -67,6 +72,7 @@ public class Certificate {
       this.endDate = endDate;
       this.x509Certificate = x509Certificate;
       this.certificateType = certificateType;
+      this.parentCertificate = parentCertificate;
       
       // Konverzija sertifikata u byte array za čuvanje u bazi
       try {

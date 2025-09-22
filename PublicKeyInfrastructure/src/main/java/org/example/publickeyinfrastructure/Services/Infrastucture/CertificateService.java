@@ -71,7 +71,7 @@ public class CertificateService {
 
       Certificate created = new Certificate(rootSubject, rootCA,
               UUID.randomUUID().toString(), newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.ROOT_CA);
+              certificate, CertificateType.ROOT_CA, null);
       certificateRepository.save(created);
       return created;
   }
@@ -103,7 +103,7 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               UUID.randomUUID().toString(), newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.INTERMEDIATE_CA);
+              certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate);
       certificateRepository.save(created);
       return created;
   }
@@ -133,7 +133,7 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               UUID.randomUUID().toString(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY);
+              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate);
 
       certificateRepository.save(created);
       return created;
