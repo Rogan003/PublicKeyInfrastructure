@@ -1,6 +1,7 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
+import org.example.publickeyinfrastructure.DTOs.Csr.IssueCertificateResponseDTO;
 import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
@@ -17,6 +18,7 @@ import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
 import java.io.ByteArrayOutputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
 
@@ -295,23 +297,19 @@ public class CertificateService {
     }
 
     public IssuerConstraintsDTO getCAConstraints(Long issuerCAId) {
-        // Fetch the CA certificate using its ID
         Optional<Certificate> optionalCertificate = certificateRepository.findById(issuerCAId);
-
         if (optionalCertificate.isEmpty()) {
-            return null; // Return null if no certificate is found
+            return null;
         }
 
         Certificate certificate = optionalCertificate.get();
 
-        // Build the IssuerConstraintsDTO object
         IssuerConstraintsDTO constraintsDTO = new IssuerConstraintsDTO();
         constraintsDTO.setIssuerId(certificate.getId().toString());
         constraintsDTO.setIssuerValidFrom(certificate.getStartDate().toString());
         constraintsDTO.setIssuerValidTo(certificate.getEndDate().toString());
         constraintsDTO.setIssuerRevoked(certificate.getRevocationReason() != null);
 
-        // Optionally calculate the max TTL (in days, based on certificate validity period)
         long maxTTL = Duration.between(
                 certificate.getStartDate().toInstant(),
                 certificate.getEndDate().toInstant()
@@ -319,5 +317,21 @@ public class CertificateService {
         constraintsDTO.setMaxTTLDays((int) maxTTL);
 
         return constraintsDTO;
+    }
+
+    public IssueCertificateResponseDTO convertToCertificateResponseDTO(Certificate certificate) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        IssueCertificateResponseDTO dto = new IssueCertificateResponseDTO();
+        dto.setId(certificate.getId());
+        dto.setSerialNumber(certificate.getSerialNumber());
+        dto.setSubjectDN(certificate.getSubject().getX500NameString());
+        dto.setIssuerDN(certificate.getIssuer().getX500NameString());
+        dto.setValidFrom(dateFormat.format(certificate.getStartDate()));
+        dto.setValidTo(dateFormat.format(certificate.getEndDate()));
+        dto.setCertificateType(certificate.getCertificateType().toString());
+        dto.setExtensions(List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER")); // Placeholder extensions
+
+        return dto;
     }
 }

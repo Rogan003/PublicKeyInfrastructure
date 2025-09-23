@@ -10,6 +10,7 @@ import CreateCertificateModal from './modals/CreateCertificate';
 import UserCreationModal from './modals/UserCreation';
 import CreateOrganisationModal from './modals/CreateOrganisation';
 import CSRRequestModal from './modals/CSRRequest';
+import type {IssueCertificateResponse} from "../types/csr.ts";
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -113,39 +114,86 @@ const Dashboard: React.FC = () => {
           </button> 
         </div>
 
-        <div className="dashboard-card">
-          <h2>Certificates</h2>
-          <div className="cert-grid">
-            {certificates.map(cert => (
-              <div key={cert.id} className="cert-card surface-card">
-                <div className="cert-header">
-                  <h3 className="cert-title">{cert.subject}</h3>
-                </div>
-                <div className="cert-meta">
-                  <div><span className="meta-label">Issuer</span><span className="meta-value">{cert.issuer}</span></div>
-                  <div><span className="meta-label">Valid from</span><span className="meta-value">{cert.validFrom}</span></div>
-                  <div><span className="meta-label">Valid to</span><span className="meta-value">{cert.validTo}</span></div>
-                </div>
-                <div className="card-actions">
-                  <button className="button-outlined" onClick={() => handleView(cert)}>
-                    <span className="material-symbols-outlined" aria-hidden>visibility</span>
-                    View
-                  </button>
+          <div className="dashboard-card">
+              <h2>Certificates</h2>
+              <div className="cert-grid">
+                  {certificates.map(cert => (
+                      <div key={cert.id} className="cert-card surface-card">
+                          <div className="cert-header">
+                              <h3
+                                  className="cert-title"
+                                  style={{
+                                      overflowWrap: 'anywhere',
+                                      wordBreak: 'break-word',
+                                      whiteSpace: 'pre-wrap',
+                                      lineHeight: 1.35,
+                                      margin: 0,
+                                  }}
+                              >
+                                  {cert.subject}
+                              </h3>
+                          </div>
+                          <div
+                              className="cert-meta"
+                              style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(110px, 160px) 1fr',
+                                  columnGap: 12,
+                                  rowGap: 8,
+                                  alignItems: 'start',
+                              }}
+                          >
+                              <span className="meta-label">Issuer</span>
+                              <span
+                                  className="meta-value"
+                                  style={{
+                                      overflowWrap: 'anywhere',
+                                      wordBreak: 'break-word',
+                                      whiteSpace: 'pre-wrap',
+                                      lineHeight: 1.35,
+                                  }}
+                                  title={cert.issuer}
+                              >
+                    {cert.issuer}
+                  </span>
 
-                  <button className="button-tonal" onClick={() => handleDownload(cert)}>
-                    <span className="material-symbols-outlined" aria-hidden>download</span>
-                    Download 
-                  </button>
+                              <span className="meta-label">Valid from</span>
+                              <span
+                                  className="meta-value"
+                                  style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                              >
+                    {cert.validFrom}
+                  </span>
 
-                  <button disabled={user.role !== 'ADMIN'} className="button-danger" onClick={() => handleDelete(cert)}>
-                    <span className="material-symbols-outlined" aria-hidden>delete</span>
-                    Revoke
-                  </button>
-                </div>
+                              <span className="meta-label">Valid to</span>
+                              <span
+                                  className="meta-value"
+                                  style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                              >
+                    {cert.validTo}
+                  </span>
+                          </div>
+                          <div className="card-actions">
+                              <button className="button-outlined" onClick={() => handleView(cert)}>
+                                  <span className="material-symbols-outlined" aria-hidden>visibility</span>
+                                  View
+                              </button>
+
+                              <button className="button-tonal" onClick={() => handleDownload(cert)}>
+                                  <span className="material-symbols-outlined" aria-hidden>download</span>
+                                  Download
+                              </button>
+
+                              <button disabled={user.role !== 'ADMIN'} className="button-danger" onClick={() => handleDelete(cert)}>
+                                  <span className="material-symbols-outlined" aria-hidden>delete</span>
+                                  Revoke
+                              </button>
+                          </div>
+                      </div>
+                  ))}
               </div>
-            ))}
           </div>
-        </div>
+
       </main>
       {detailsOpen && (
         <CertificateDetailsModal certificate={detailsOpen} onClose={() => setDetailsOpen(null)} />
@@ -162,18 +210,19 @@ const Dashboard: React.FC = () => {
       {csrOpen && (
         <CSRRequestModal
           onClose={() => setCsrOpen(false)}
-          onIssued={(res) => {
-              // Optionally push into visible list to reflect issuance
-              const c: Certificate = {
-                  id: Number(res.certificateId) || Date.now(),
-                  subject: 'New EE Certificate',
-                  issuer: 'Selected CA',
-                  validFrom: '',
-                  validTo: '',
-                  extensions: [],
+          onIssued={(res: IssueCertificateResponse) => {
+              const newCertificate: Certificate = {
+                  id: res.id,
+                  subject: res.subjectDN,
+                  issuer: res.issuerDN,
+                  validFrom: res.validFrom,
+                  validTo: res.validTo,
+                  extensions: res.extensions,
               };
-              setCertificates(prev => [c, ...prev]);
+
+              setCertificates((prev) => [newCertificate, ...prev]);
           }}
+
         />
       )}
     </div>

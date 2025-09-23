@@ -32,13 +32,11 @@ export interface CSRUploadRequest {
 // when user wants to generate a CSR automatically
 export interface CSRAutogenRequest {
     issuerCAId: string;
-    subject: {
-        CN: string;
-        O: string;
-        OU?: string;
-        C?: string;
-        E?: string;
-    };
+    subjectCN: string;
+    subjectO: string;
+    subjectOU?: string;
+    subjectC?: string;
+    subjectE?: string;
     notBefore: string;
     notAfter: string;
     keystoreFormat: KeystoreFormat;
@@ -65,4 +63,15 @@ export interface RevocationReason {
     code: number;
     name: string;
     description?: string;
+}
+
+export interface IssueCertificateResponse {
+    id: number;
+    serialNumber: string;
+    subjectDN: string;
+    issuerDN: string;
+    validFrom: string; // Dates formatted as strings (e.g., "YYYY-MM-DD")
+    validTo: string;
+    certificateType: string;
+    extensions: string[]; // Array of extension strings
 }

@@ -11,7 +11,11 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CSRAutogenRequest {
     private String issuerCAId;
-    private SubjectAutogenDTO subject;
+    private String subjectCN;
+    private String subjectO;
+    private String subjectOU;
+    private String subjectC;
+    private String subjectE;
     private String notBefore;
     private String notAfter;
     private String keystoreFormat;

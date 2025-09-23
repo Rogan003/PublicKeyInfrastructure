@@ -10,11 +10,19 @@ import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 @RestController
@@ -289,6 +297,58 @@ public class CertificateController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error retrieving CA constraints: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/downloads/{filename}")
+    public ResponseEntity<Resource> downloadKeystore(@PathVariable String filename) throws IOException {
+        Path filePath = Paths.get("/path/to/keystores", filename); // Location where keystores are stored
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+
+        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+    }
+
+    @GetMapping("/{id}/certificate")
+    public ResponseEntity<Resource> downloadCertificateAsPem(@PathVariable Long id) {
+        try {
+            Optional<Certificate> optionalCertificate = certificateService.findById(id);
+            if (optionalCertificate.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(null);
+            }
+
+            Certificate certificate = optionalCertificate.get();
+
+            if (certificate.getRevocationReason() != null || certificate.getRevocationDate() != null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(null);
+            }
+
+            byte[] certBytes = certificate.getX509Certificate().getEncoded();
+
+            String pemCertificate = "-----BEGIN CERTIFICATE-----\n" +
+                    java.util.Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(certBytes) +
+                    "\n-----END CERTIFICATE-----\n";
+
+            ByteArrayResource resource = new ByteArrayResource(pemCertificate.getBytes());
+            String filename = "certificate_" + certificate.getSerialNumber() + ".pem";
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(null);
         }
     }
 }
