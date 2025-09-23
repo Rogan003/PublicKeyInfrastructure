@@ -498,3 +498,154 @@
   color: var(--m3-on-surface);
   font-weight: 700;
 }
+
+/* Enhanced form sections for Create Certificate modal */
+.form-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid color-mix(in srgb, var(--m3-outline) 12%, transparent);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--m3-on-surface);
+}
+
+.section-title .material-symbols-outlined {
+  font-size: 20px;
+  color: var(--m3-primary);
+}
+
+/* Enhanced extensions grid */
+.extensions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--m3-surface-container-low);
+  border: 1.5px solid var(--m3-surface-variant);
+  border-radius: var(--shape-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 56px;
+}
+
+.checkbox-label:hover {
+  background: var(--m3-surface-container);
+  border-color: var(--m3-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--m3-primary) 20%, transparent);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--m3-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-text {
+  font-weight: 600;
+  color: var(--m3-on-surface);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Disabled checkbox styles */
+.checkbox-label.disabled {
+  background: var(--m3-surface-container-lowest);
+  border-color: var(--m3-surface-variant);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.checkbox-label.disabled:hover {
+  background: var(--m3-surface-container-lowest);
+  border-color: var(--m3-surface-variant);
+  box-shadow: none;
+}
+
+.checkbox-label.disabled input[type="checkbox"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-label.disabled .checkbox-text {
+  color: var(--m3-on-surface-variant);
+}
+
+.disabled-icon {
+  color: var(--m3-error);
+  font-size: 18px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Enhanced modal card for better spacing */
+.modal-card {
+  width: 100%;
+  max-width: 800px;
+  border-radius: var(--shape-xl);
+  box-shadow: var(--elev-2);
+  border: 1px solid color-mix(in srgb, var(--m3-outline) 12%, transparent);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Improved form grid responsiveness */
+@media (max-width: 768px) {
+  .form-grid-two-columns {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .extensions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-card {
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .modal-content {
+    padding: 16px 20px 20px 20px;
+  }
+  
+  .form-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .extensions-grid {
+    gap: 12px;
+  }
+  
+  .checkbox-label {
+    padding: 12px;
+    min-height: 48px;
+  }
+  
+  .checkbox-text {
+    font-size: 13px;
+  }
+}

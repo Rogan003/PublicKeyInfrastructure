@@ -5,6 +5,7 @@ import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
 import org.example.publickeyinfrastructure.Services.Infrastucture.OrganisationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ public class OrganisationController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrganisationDTO> createOrganisation(@RequestBody OrganisationDTO organisationDTO) {
         Organisation organisation = organisationService.createOrganisation(organisationDTO);
         OrganisationDTO response = organisationService.convertToDTO(organisation);

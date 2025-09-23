@@ -5,12 +5,12 @@ import org.example.publickeyinfrastructure.DTOs.Infrastructure.CACertificateInfo
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
-import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -107,6 +107,7 @@ public class CertificateController {
     }
 
     @PostMapping("/root-ca")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createRootCA(@RequestBody @Valid CreateCertificateDTO request,
                                           BindingResult bindingResult) {
         try {
@@ -138,6 +139,7 @@ public class CertificateController {
     }
 
     @PostMapping("/intermediate-ca")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CERTIFICATE_AUTHORITY')")
     public ResponseEntity<?> createIntermediateCA(@RequestBody @Valid CreateCertificateDTO request,
                                                   BindingResult bindingResult) {
         try {

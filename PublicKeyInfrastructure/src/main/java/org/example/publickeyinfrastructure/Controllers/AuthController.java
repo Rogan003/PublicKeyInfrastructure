@@ -5,6 +5,7 @@ import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.example.publickeyinfrastructure.Services.Auth.EmailVerificationService;
@@ -39,6 +40,7 @@ public class AuthController {
     }
 
     @PostMapping("/register-ca")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AuthResponseDTO> registerCAUser(@RequestBody RegistrationDTO registrationDTO) {
         try {
             AuthResponseDTO response = authService.registerCaUser(registrationDTO);
@@ -109,6 +111,7 @@ public class AuthController {
     }
 
     @GetMapping("/potential-owners")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CERTIFICATE_AUTHORITY')")
     public ResponseEntity<?> potentialOwners() {
         try {
             List<RegularUser> potentialOwners = authService.getPotentialOwners();

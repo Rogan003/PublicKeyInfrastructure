@@ -6,6 +6,7 @@ import org.example.publickeyinfrastructure.Services.Infrastucture.SubjectService
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -19,6 +20,7 @@ public class SubjectController {
     private SubjectService subjectService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CERTIFICATE_AUTHORITY')")
     public ResponseEntity<?> createSubject(@RequestBody SubjectDTO subjectDTO) {
         try {
             Subject createdSubject = subjectService.createSubject(subjectDTO);
