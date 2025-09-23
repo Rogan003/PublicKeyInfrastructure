@@ -67,12 +67,14 @@ public class CertificateService {
       ), user.getOrganisation());
       Subject subject = subjectService.createSubject(newCertificate.getSubject());
 
+      String sn = String.valueOf(getAllCertificates().size());
+
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuer, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              UUID.randomUUID().toString(), newCertificate.getExtensions());
+              sn, newCertificate.getExtensions());
 
       Certificate created = new Certificate(subject, issuer,
-              UUID.randomUUID().toString(), newCertificate.getStartDate(), newCertificate.getEndDate(),
+              sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
               certificate, CertificateType.ROOT_CA, null);
       certificateRepository.save(created);
       return created;
@@ -91,13 +93,15 @@ public class CertificateService {
           return null;
       }
 
+      String sn = String.valueOf(getAllCertificates().size());
+
       // Intermediate CA signs Root CA
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), UUID.randomUUID().toString(), newCertificate.getExtensions());
+              newCertificate.getEndDate(), sn, newCertificate.getExtensions());
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
-              UUID.randomUUID().toString(), newCertificate.getStartDate(), newCertificate.getEndDate(),
+              sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
               certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate);
       certificateRepository.save(created);
       return created;
@@ -115,12 +119,14 @@ public class CertificateService {
           return null;
       }
 
+      String sn = String.valueOf(getAllCertificates().size());
+
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), UUID.randomUUID().toString(), newCertificate.getExtensions());
+              newCertificate.getEndDate(), sn, newCertificate.getExtensions());
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
-              UUID.randomUUID().toString(), newCertificate.getStartDate(),
+              sn, newCertificate.getStartDate(),
               newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate);
 
       certificateRepository.save(created);
