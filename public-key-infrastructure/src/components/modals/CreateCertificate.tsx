@@ -21,6 +21,42 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   const [issuerCA, setIssuerCA] = useState<number>(-1);
   const [potentialOwners, setPotentialOwners] = useState<UserPotentialOwner[]>([]);
   const [caCertificates, setCACertificates] = useState<CACertificateInfo[]>([]);
+  const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+
+  const availableExtensions = [
+    { value: 'BASIC_CA', label: 'Basic CA Constraints' },
+    { value: 'BASIC_END', label: 'Basic End Entity Constraints' },
+    { value: 'KEY_USAGE', label: 'Key Usage' },
+    { value: 'EXT_KEY_SERVER', label: 'Extended Key Usage - Server Auth' },
+    { value: 'EXT_KEY_CLIENT', label: 'Extended Key Usage - Client Auth' },
+    { value: 'SAN', label: 'Subject Alternative Name' }
+  ];
+
+  // Define contradictory extensions
+  const contradictoryExtensions = {
+    'BASIC_CA': ['BASIC_END'],
+    'BASIC_END': ['BASIC_CA']
+  };
+
+  // Check if an extension can be selected based on current selections
+  const canSelectExtension = (extensionValue: string): boolean => {
+    const contradictions = contradictoryExtensions[extensionValue as keyof typeof contradictoryExtensions];
+    if (!contradictions) return true;
+    
+    return !contradictions.some(contradictoryExt => selectedExtensions.includes(contradictoryExt));
+  };
+
+  // Handle extension selection with validation
+  const handleExtensionChange = (extensionValue: string, checked: boolean) => {
+    if (checked) {
+      // Check if this extension can be selected
+      if (canSelectExtension(extensionValue)) {
+        setSelectedExtensions([...selectedExtensions, extensionValue]);
+      }
+    } else {
+      setSelectedExtensions(selectedExtensions.filter(ext => ext !== extensionValue));
+    }
+  };
 
   useEffect(() => {
       apiService.getPotentialOwners().then(setPotentialOwners)
@@ -49,7 +85,7 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
         subject,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        extensions: [], // TODO: add extensions here
+        extensions: selectedExtensions,
         ownerId: owner
     };
 
@@ -75,150 +111,203 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
           </button>
         </div>
         <form className="modal-content" onSubmit={handleSubmit}>
-          <div className="form-grid-two-columns">
-            <div className="form-column">
-              <label>
-                <span className="meta-label">Common name</span>
-                <input 
-                  type="text" 
-                  value={commonName} 
-                  onChange={(e) => setCommonName(e.target.value)} 
-                  placeholder="Enter common name"
-                  required
-                />
-              </label>
-              <label>
-                <span className="meta-label">Given name</span>
-                <input 
-                  type="text" 
-                  value={givenName} 
-                  onChange={(e) => setGivenName(e.target.value)} 
-                  placeholder="Enter given name"
-                  required
-                />
-              </label>
-              <label>
-                <span className="meta-label">Organization unit</span>
-                <input 
-                  type="text" 
-                  value={organizationUnit} 
-                  onChange={(e) => setOrganizationUnit(e.target.value)} 
-                  placeholder="Enter organization unit"
-                />
-              </label>
-              <label>
-                <span className="meta-label">Email</span>
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  placeholder="Enter email address"
-                />
-              </label>
-              <label>
-                <span className="meta-label">Start Date</span>
-                <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                  required
-                />
-              </label>
-            </div>
-            <div className="form-column">
-              <label>
-                <span className="meta-label">Surname</span>
-                <input 
-                  type="text" 
-                  value={surname} 
-                  onChange={(e) => setSurname(e.target.value)} 
-                  placeholder="Enter surname"
-                  required
-                />
-              </label>
-              <label>
-                <span className="meta-label">Organization name</span>
-                <input 
-                  type="text" 
-                  value={organizationName} 
-                  onChange={(e) => setOrganizationName(e.target.value)} 
-                  placeholder="Enter organization name"
-                  required
-                />
-              </label>
-              <label>
-                <span className="meta-label">Country</span>
-                <input 
-                  type="text" 
-                  value={country} 
-                  onChange={(e) => setCountry(e.target.value)} 
-                  placeholder="Enter country"
-                />
-              </label>
+          {/* Subject Information Section */}
+          <div className="form-section">
+            <h4 className="section-title">
+              <span className="material-symbols-outlined">person</span>
+              Subject Information
+            </h4>
+            <div className="form-grid-two-columns">
+              <div className="form-column">
                 <label>
-                    <span className="meta-label">Owner</span>
-                    <select
-                        className="m3-select"
-                        value={owner}
-                        onChange={(e) => setOwner(Number(e.target.value))}
-                    >
-                        <option value="-1">Select owner</option>
-                        {potentialOwners.map((po) => (
-                            <option key={po.id} value={po.id}>
-                                {po.nameWithOrg}
-                            </option>
-                        ))}
-                    </select>
+                  <span className="meta-label">Common name *</span>
+                  <input 
+                    type="text" 
+                    value={commonName} 
+                    onChange={(e) => setCommonName(e.target.value)} 
+                    placeholder="Enter common name"
+                    required
+                  />
                 </label>
-              <label>
-                <span className="meta-label">End Date</span>
-                <input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                  required
-                />
-              </label>
+                <label>
+                  <span className="meta-label">Given name *</span>
+                  <input 
+                    type="text" 
+                    value={givenName} 
+                    onChange={(e) => setGivenName(e.target.value)} 
+                    placeholder="Enter given name"
+                    required
+                  />
+                </label>
+                <label>
+                  <span className="meta-label">Organization unit</span>
+                  <input 
+                    type="text" 
+                    value={organizationUnit} 
+                    onChange={(e) => setOrganizationUnit(e.target.value)} 
+                    placeholder="Enter organization unit"
+                  />
+                </label>
+                <label>
+                  <span className="meta-label">Email</span>
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    placeholder="Enter email address"
+                  />
+                </label>
+              </div>
+              <div className="form-column">
+                <label>
+                  <span className="meta-label">Surname *</span>
+                  <input 
+                    type="text" 
+                    value={surname} 
+                    onChange={(e) => setSurname(e.target.value)} 
+                    placeholder="Enter surname"
+                    required
+                  />
+                </label>
+                <label>
+                  <span className="meta-label">Organization name *</span>
+                  <input 
+                    type="text" 
+                    value={organizationName} 
+                    onChange={(e) => setOrganizationName(e.target.value)} 
+                    placeholder="Enter organization name"
+                    required
+                  />
+                </label>
+                <label>
+                  <span className="meta-label">Country</span>
+                  <input 
+                    type="text" 
+                    value={country} 
+                    onChange={(e) => setCountry(e.target.value)} 
+                    placeholder="Enter country"
+                  />
+                </label>
+                <label>
+                  <span className="meta-label">Owner</span>
+                  <select
+                    className="m3-select"
+                    value={owner}
+                    onChange={(e) => setOwner(Number(e.target.value))}
+                  >
+                    <option value="-1">Select owner</option>
+                    {potentialOwners.map((po) => (
+                      <option key={po.id} value={po.id}>
+                        {po.nameWithOrg}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Certificate Configuration Section */}
+          <div className="form-section">
+            <h4 className="section-title">
+              <span className="material-symbols-outlined">settings</span>
+              Certificate Configuration
+            </h4>
+            <div className="form-grid-two-columns">
+              <div className="form-column">
+                <label>
+                  <span className="meta-label">Certificate type *</span>
+                  <select 
+                    className="m3-select" 
+                    value={certificateType} 
+                    onChange={(e) => {
+                      setCertificateType(e.target.value);
+                      if (e.target.value === 'RootCA') {
+                        setIssuerCA(-1);
+                      }
+                    }}
+                  >
+                    <option value="RootCA">Root CA</option>
+                    <option value="IntermediateCA">Intermediate CA</option>
+                    <option value="EndEntity">End Entity</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="meta-label">Start Date *</span>
+                  <input 
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => setStartDate(e.target.value)} 
+                    required
+                  />
+                </label>
+              </div>
+              <div className="form-column">
+                {certificateType !== 'RootCA' && (
+                  <label>
+                    <span className="meta-label">Issuer CA *</span>
+                    <select 
+                      className="m3-select" 
+                      value={issuerCA} 
+                      onChange={(e) => setIssuerCA(Number(e.target.value))}
+                      required
+                    >
+                      <option value="-1">Select issuer CA</option>
+                      {caCertificates.map((ca) => (
+                        <option key={ca.id} value={ca.id}>
+                          {ca.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <label>
+                  <span className="meta-label">End Date *</span>
+                  <input 
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => setEndDate(e.target.value)} 
+                    required
+                  />
+                </label>
+              </div>
             </div>
           </div>
           
-          <div className="form-bottom-section">
-            <label>
-              <span className="meta-label">Certificate type</span>
-              <select 
-                className="m3-select" 
-                value={certificateType} 
-                onChange={(e) => {
-                  setCertificateType(e.target.value);
-                  if (e.target.value === 'RootCA') {
-                    setIssuerCA(-1);
-                  }
-                }}
-              >
-                <option value="RootCA">RootCA</option>
-                <option value="IntermediateCA">IntermediateCA</option>
-                <option value="EndEntity">EndEntity</option>
-              </select>
-            </label>
-            
-            {certificateType !== 'RootCA' && (
-              <label>
-                <span className="meta-label">Issuer CA</span>
-                <select 
-                  className="m3-select" 
-                  value={issuerCA} 
-                  onChange={(e) => setIssuerCA(Number(e.target.value))}
-                  required
-                >
-                    <option value="-1">Select issuer CA</option>
-                    {caCertificates.map((ca) => (
-                        <option key={ca.id} value={ca.id}>
-                            {ca.name}
-                        </option>
-                    ))}
-                </select>
-              </label>
-            )}
+          {/* Extensions Section */}
+          <div className="form-section">
+            <h4 className="section-title">
+              <span className="material-symbols-outlined">extension</span>
+              Certificate Extensions
+            </h4>
+            <div className="extensions-grid">
+              {availableExtensions.map((extension) => {
+                const isSelected = selectedExtensions.includes(extension.value);
+                const canSelect = canSelectExtension(extension.value);
+                const isDisabled = !canSelect && !isSelected;
+                
+                return (
+                  <label 
+                    key={extension.value} 
+                    className={`checkbox-label ${isDisabled ? 'disabled' : ''}`}
+                    title={isDisabled ? 'Cannot select: conflicts with another selected extension' : ''}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      disabled={isDisabled}
+                      onChange={(e) => handleExtensionChange(extension.value, e.target.checked)}
+                    />
+                    <span className="checkbox-text">{extension.label}</span>
+                    {isDisabled && (
+                      <span className="material-symbols-outlined disabled-icon" title="Conflicts with selected extension">
+                        block
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
           </div>
           
           <div className="modal-actions">

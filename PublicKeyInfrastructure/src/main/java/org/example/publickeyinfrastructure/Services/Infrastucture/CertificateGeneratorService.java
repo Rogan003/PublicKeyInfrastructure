@@ -50,6 +50,8 @@ public class CertificateGeneratorService {
             );
 
             for (String ext : extensions) {
+                System.out.println("Extension: ");
+                System.out.println(ext);
                 switch (ext.toUpperCase()) {
                     case "BASIC_CA":
                         certGen.addExtension(

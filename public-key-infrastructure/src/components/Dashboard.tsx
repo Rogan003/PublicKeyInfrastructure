@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Certificate
           </button>
-          <button className="button-tonal" onClick={handleAddUser}>
+          <button disabled={user.role !== 'ADMIN'} className="button-tonal" onClick={handleAddUser}>
             <span className="material-symbols-outlined" aria-hidden>person_add</span>
             Add CA User
           </button>
@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Key Pair
           </button> */}
-           <button className="button-tonal" onClick={handleCreateOrganisation}>
+           <button disabled={user.role !== 'ADMIN'} className="button-tonal" onClick={handleCreateOrganisation}>
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Organisation
           </button> 
