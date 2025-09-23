@@ -149,6 +149,11 @@ public class CertificateController {
             if (bindingResult.hasErrors()) {
                 return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
             }
+
+            if (request.getIssuerCertificateId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("There is no issuer certificate!");
+            }
             
             Certificate intermediateCA = certificateService.createIntermediateCA(request);
             if (intermediateCA != null) {
@@ -175,6 +180,11 @@ public class CertificateController {
 
             if (bindingResult.hasErrors()) {
                 return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
+            }
+
+            if (request.getIssuerCertificateId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("There is no issuer certificate!");
             }
 
             Certificate endEntityCertificate = certificateService.createEndEntityCertificate(request);

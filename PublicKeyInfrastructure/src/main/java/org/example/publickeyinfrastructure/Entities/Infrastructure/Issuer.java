@@ -24,12 +24,10 @@ public class Issuer {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  
-  @Lob
+
   @Column(name = "private_key")
   private byte[] privateKeyBytes;
-  
-  @Lob
+
   @Column(name = "public_key")
   private byte[] publicKeyBytes;
   

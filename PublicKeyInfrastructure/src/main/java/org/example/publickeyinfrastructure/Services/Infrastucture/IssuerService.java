@@ -35,6 +35,12 @@ public class IssuerService {
       if (issuerDTO.getCommonName() != null) {
         builder.addRDN(BCStyle.CN, issuerDTO.getCommonName());
       }
+      if (issuerDTO.getSurname() != null) {
+          builder.addRDN(BCStyle.SURNAME, issuerDTO.getSurname());
+      }
+      if (issuerDTO.getGivenName() != null) {
+          builder.addRDN(BCStyle.GIVENNAME, issuerDTO.getGivenName());
+      }
       if (issuerDTO.getOrganizationName() != null) {
         builder.addRDN(BCStyle.O, issuerDTO.getOrganizationName());
       }
@@ -74,8 +80,6 @@ public class IssuerService {
 
   public IssuerDTO convertToDTO(Issuer issuer) {
     IssuerDTO dto = new IssuerDTO();
-    dto.setId(issuer.getId());
-    dto.setX500Name(issuer.getX500NameString());
     
     String x500String = issuer.getX500NameString();
     String[] parts = x500String.split(",");

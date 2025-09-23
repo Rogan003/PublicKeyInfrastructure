@@ -56,7 +56,15 @@ public class CertificateService {
   public Certificate createRootCA(CreateCertificateDTO newCertificate) {
       // Root CA signs itself
       RegularUser user = authService.getUserById(newCertificate.getOwnerId());
-      Issuer issuer = issuerService.createIssuer(new IssuerDTO(), user.getOrganisation());
+      Issuer issuer = issuerService.createIssuer(new IssuerDTO(
+              newCertificate.getSubject().getCommonName(),
+              newCertificate.getSubject().getSurname(),
+              newCertificate.getSubject().getGivenName(),
+              newCertificate.getSubject().getOrganizationName(),
+              newCertificate.getSubject().getOrganizationUnit(),
+              newCertificate.getSubject().getCountry(),
+              newCertificate.getSubject().getEmail()
+      ), user.getOrganisation());
       Subject subject = subjectService.createSubject(newCertificate.getSubject());
 
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,

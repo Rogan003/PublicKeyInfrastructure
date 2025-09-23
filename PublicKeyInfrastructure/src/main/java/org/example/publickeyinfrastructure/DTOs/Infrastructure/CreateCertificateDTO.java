@@ -14,7 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateCertificateDTO {
-    @NotNull(message = "Issuer Certificate is required!")
     private Long issuerCertificateId;
     @NotNull(message = "Subject is required!")
     private SubjectDTO subject;

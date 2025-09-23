@@ -1,12 +1,12 @@
 -- pass for everyone is: (CspCsp567)
 -- First insert organizations to get their IDs
-INSERT INTO organisations (name, unit, country)
+INSERT INTO organisations (name, unit, country, private_key)
 VALUES
-    ('TechCorp Solutions', 'IT Department', 'Serbia'),
-    ('Global Finance Ltd', 'Security Division', 'Germany'),
-    ('Healthcare Systems Inc', 'Digital Infrastructure', 'United States'),
-    ('Educational Network', 'Technology Services', 'France'),
-    ('Government Services', 'Digital Security', 'United Kingdom');
+    ('TechCorp Solutions', 'IT Department', 'Serbia', decode('6573567a4c4a594e434e494c414846707963616c3532626273505571545465506f484e636157427a2f584679574c386f6d69627152646c5a6772616a5661676b4a4178704c757473343662477174352b79375557313158595954723735556e44', 'hex')),
+    ('Global Finance Ltd', 'Security Division', 'Germany', decode('6573567a4c4a594e434e494c414846707963616c3532626273505571545465506f484e636157427a2f584679574c386f6d69627152646c5a6772616a5661676b4a4178704c757473343662477174352b79375557313158595954723735556e44', 'hex')),
+    ('Healthcare Systems Inc', 'Digital Infrastructure', 'United States', decode('6573567a4c4a594e434e494c414846707963616c3532626273505571545465506f484e636157427a2f584679574c386f6d69627152646c5a6772616a5661676b4a4178704c757473343662477174352b79375557313158595954723735556e44', 'hex')),
+    ('Educational Network', 'Technology Services', 'France', decode('6573567a4c4a594e434e494c414846707963616c3532626273505571545465506f484e636157427a2f584679574c386f6d69627152646c5a6772616a5661676b4a4178704c757473343662477174352b79375557313158595954723735556e44', 'hex')),
+    ('Government Services', 'Digital Security', 'United Kingdom', decode('6573567a4c4a594e434e494c414846707963616c3532626273505571545465506f484e636157427a2f584679574c386f6d69627152646c5a6772616a5661676b4a4178704c757473343662477174352b79375557313158595954723735556e44', 'hex'));
 
 -- Insert users with proper column names and organisation_id references
 INSERT INTO users (email, password, role, user_type, name, surname, organisation_id, enabled, created_at)

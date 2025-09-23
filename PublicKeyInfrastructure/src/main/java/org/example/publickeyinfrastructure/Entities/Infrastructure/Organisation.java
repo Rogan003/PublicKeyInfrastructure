@@ -22,7 +22,6 @@ public class Organisation {
   @Column(name = "country")
   private String country;
 
-  @Lob
   @Column(name = "private_key")
   private byte[] keyBytes;
 
