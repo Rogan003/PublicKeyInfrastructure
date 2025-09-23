@@ -1,6 +1,7 @@
 package org.example.publickeyinfrastructure.Controllers;
 
 import jakarta.validation.Valid;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.CACertificateInfoDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
@@ -13,10 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/certificates")
@@ -121,11 +119,9 @@ public class CertificateController {
                 return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
             }
 
-            // this may need to change, not sure if this is the right check
-            // but the point is if issuer != subject => can't issue this certificate
-            if (!Objects.equals(request.getIssuerCertificate().getIssuerDN(), request.getSubject().getX500Name())) {
+            if (request.getIssuerCertificateId() != null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Issuer and subject must be the same");
+                        .body("There is no issuer certificate for a root CA");
             }
             Certificate rootCA = certificateService.createRootCA(request);
             if (rootCA != null) {
@@ -193,6 +189,36 @@ public class CertificateController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating end-entity certificate: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/ca-certificates")
+    public ResponseEntity<?> getAllCACertificates() {
+        try {
+            List<Certificate> caCertificates = certificateService.findByCertificateType(CertificateType.ROOT_CA);
+            List<Certificate> intermediateCertificates = certificateService.findByCertificateType(CertificateType.INTERMEDIATE_CA);
+
+            List<CACertificateInfoDTO> responseDTO = new ArrayList<>();
+
+            for (Certificate caCertificate : caCertificates) {
+                responseDTO.add(new CACertificateInfoDTO(
+                        caCertificate.getId(),
+                        caCertificate.getSubject().getX500NameString())
+                );
+            }
+
+            for (Certificate intermediateCertificate : intermediateCertificates) {
+                responseDTO.add(new CACertificateInfoDTO(
+                        intermediateCertificate.getId(),
+                        intermediateCertificate.getSubject().getX500NameString())
+                );
+            }
+
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving CAs: " + e.getMessage());
         }
     }
 

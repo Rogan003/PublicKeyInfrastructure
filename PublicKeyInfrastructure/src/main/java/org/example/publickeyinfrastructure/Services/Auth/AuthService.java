@@ -14,6 +14,7 @@ import org.example.publickeyinfrastructure.Repositories.UserRepository;
 import org.example.publickeyinfrastructure.Utils.JwtUtil;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 
 
 @Service
@@ -207,7 +208,7 @@ public class AuthService  {
         }
     }
     
-
-
-    
+    public List<RegularUser> getPotentialOwners() {
+        return userRepository.findAllPotentialOwners();
+    }
 }

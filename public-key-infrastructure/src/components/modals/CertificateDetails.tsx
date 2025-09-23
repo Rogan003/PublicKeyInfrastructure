@@ -1,8 +1,8 @@
 import React from 'react';
-import type { CertificateItem } from '../../types/certificates';
+import type {Certificate} from '../../types/certificates';
 
 interface CertificateDetailsModalProps {
-  certificate: CertificateItem | null;
+  certificate: Certificate | null;
   onClose: () => void;
 }
 
@@ -26,11 +26,8 @@ const CertificateDetailsModal: React.FC<CertificateDetailsModalProps> = ({ certi
             <div><span className="meta-label">Issuer</span><span className="meta-value">{certificate.issuer}</span></div>
             <div><span className="meta-label">Valid from</span><span className="meta-value">{certificate.validFrom}</span></div>
             <div><span className="meta-label">Valid to</span><span className="meta-value">{certificate.validTo}</span></div>
-            <div><span className="meta-label">Status</span><span className="meta-value">{certificate.status}</span></div>
             <h4>Extensions</h4>
-            <div><span className="meta-label">Basic constraints</span><span className="meta-value">{certificate.basicConstraints}</span></div>
-            <div><span className="meta-label">Key usage</span><span className="meta-value">{certificate.keyUsage}</span></div>
-            <div><span className="meta-label">Extended key usage</span><span className="meta-value">{certificate.extendedKeyUsage}</span></div>
+              {/* TODO: Add extensions here */}
           </div>
         </div>
       </div>

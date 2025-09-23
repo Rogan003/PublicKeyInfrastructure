@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation } from '../types/auth';
+import type {CACertificateInfo, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
 
 class ApiService {
   private api: AxiosInstance;
@@ -93,6 +94,31 @@ class ApiService {
     // For stateless refresh tokens, logout is handled client-side
     // Simply clear the tokens from localStorage
     this.clearTokens();
+  }
+
+  async createRootCertificate(certificate: CreateCertificate): Promise<any> {
+    const response: AxiosResponse = await this.api.post('/certificates/root-ca', certificate);
+    return response.data;
+  }
+
+  async createIntermediateCertificate(certificate: CreateCertificate): Promise<any> {
+    const response: AxiosResponse = await this.api.post('/certificates/intermediate-ca', certificate);
+    return response.data;
+  }
+
+  async createEndEntityCertificate(certificate: CreateCertificate): Promise<any> {
+    const response: AxiosResponse = await this.api.post('/certificates/end-entity', certificate);
+    return response.data;
+  }
+
+  async getPotentialOwners(): Promise<UserPotentialOwner[]> {
+      const response: AxiosResponse = await this.api.get('/auth/potential-owners');
+      return response.data;
+  }
+
+  async getAllCACertificates(): Promise<CACertificateInfo[]> {
+      const response: AxiosResponse = await this.api.get('/certificates/ca-certificates');
+      return response.data;
   }
 
   // Token management
