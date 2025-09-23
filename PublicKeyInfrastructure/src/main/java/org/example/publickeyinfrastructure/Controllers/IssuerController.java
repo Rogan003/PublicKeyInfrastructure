@@ -21,7 +21,7 @@ public class IssuerController {
     @PostMapping
     public ResponseEntity<?> createIssuer(@RequestBody IssuerDTO issuerDTO) {
         try {
-            Issuer createdIssuer = issuerService.createIssuer(issuerDTO);
+            Issuer createdIssuer = issuerService.createIssuer(issuerDTO, null);
             if (createdIssuer != null) {
                 IssuerDTO responseDTO = issuerService.convertToDTO(createdIssuer);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);

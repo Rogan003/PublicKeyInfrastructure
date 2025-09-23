@@ -211,4 +211,8 @@ public class AuthService  {
     public List<RegularUser> getPotentialOwners() {
         return userRepository.findAllPotentialOwners();
     }
+
+    public RegularUser getUserById(Long userId) {
+        return (RegularUser) userRepository.findById(userId).orElse(null);
+    }
 }

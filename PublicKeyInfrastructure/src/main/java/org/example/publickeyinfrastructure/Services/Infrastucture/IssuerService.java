@@ -2,6 +2,7 @@ package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
 import org.example.publickeyinfrastructure.Repositories.IssuerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class IssuerService {
   @Autowired
   private IssuerRepository issuerRepository;
 
-  public Issuer createIssuer(IssuerDTO issuerDTO) {
+  public Issuer createIssuer(IssuerDTO issuerDTO, Organisation organisation) {
     try {
       KeyPair keyPair = generateKeyPair();
       X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
@@ -34,8 +35,11 @@ public class IssuerService {
       if (issuerDTO.getCommonName() != null) {
         builder.addRDN(BCStyle.CN, issuerDTO.getCommonName());
       }
-      if (issuerDTO.getOrganization() != null) {
-        builder.addRDN(BCStyle.O, issuerDTO.getOrganization());
+      if (issuerDTO.getOrganizationName() != null) {
+        builder.addRDN(BCStyle.O, issuerDTO.getOrganizationName());
+      }
+      if (issuerDTO.getOrganizationUnit() != null) {
+          builder.addRDN(BCStyle.OU, issuerDTO.getOrganizationUnit());
       }
       if (issuerDTO.getCountry() != null) {
         builder.addRDN(BCStyle.C, issuerDTO.getCountry());
@@ -44,7 +48,7 @@ public class IssuerService {
         builder.addRDN(BCStyle.E, issuerDTO.getEmail());
       }
 
-      Issuer issuer = new Issuer(keyPair.getPrivate(), keyPair.getPublic(), builder.build(), null);
+      Issuer issuer = new Issuer(keyPair.getPrivate(), keyPair.getPublic(), builder.build(), organisation);
       return issuerRepository.save(issuer);
     } catch (Exception e) {
       e.printStackTrace();
@@ -87,7 +91,7 @@ public class IssuerService {
             dto.setCommonName(value);
             break;
           case "O":
-            dto.setOrganization(value);
+            dto.setOrganizationName(value);
             break;
           case "C":
             dto.setCountry(value);

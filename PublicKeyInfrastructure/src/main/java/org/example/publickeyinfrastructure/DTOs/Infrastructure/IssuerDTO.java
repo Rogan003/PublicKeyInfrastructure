@@ -12,7 +12,8 @@ import lombok.Setter;
 public class IssuerDTO {
     private Long id;
     private String commonName;
-    private String organization;
+    private String organizationName;
+    private String organizationUnit;
     private String country;
     private String email;
     private String x500Name;
