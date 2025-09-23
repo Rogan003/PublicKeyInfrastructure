@@ -1,6 +1,10 @@
 package org.example.publickeyinfrastructure.Controllers;
 
 import jakarta.validation.Valid;
+import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.CACertificateInfoDTO;
+import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.*;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
@@ -11,12 +15,19 @@ import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateService;
 import org.example.publickeyinfrastructure.Utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -197,7 +208,7 @@ public class CertificateController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("There is no issuer certificate!");
             }
-            
+
             Certificate intermediateCA = certificateService.createIntermediateCA(request);
             if (intermediateCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(intermediateCA);
@@ -328,4 +339,114 @@ public class CertificateController {
                 isUserInCertificateChain(certificate.getParentCertificate(), user);
     }
 
+   @PostMapping("/{id}/revoke")
+   public ResponseEntity<?> revokeCertificate(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String reason = request.get("reason");
+
+            if (reason == null || reason.isEmpty()) {
+                return ResponseEntity.badRequest().body("Revocation reason is required");
+            }
+
+            boolean revoked = certificateService.revokeCertificate(id, reason);
+            if (!revoked) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Certificate could not be revoked. It may not exist or is already revoked.");
+            }
+
+            return ResponseEntity.ok("Certificate revoked successfully");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error revoking certificate: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/ca")
+    public ResponseEntity<?> getAllCAs() {
+        try {
+            List<Certificate> caCertificates = certificateService.findByCertificateType(CertificateType.ROOT_CA);
+            List<Certificate> intermediateCertificates = certificateService.findByCertificateType(CertificateType.INTERMEDIATE_CA);
+
+            List<CAInfoDTO> responseDTO = certificateService.convertToCAInfoDTOList(caCertificates, intermediateCertificates);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error retrieving CAs: " + e.getMessage());
+        }
+    }
+
+    // Fetch constraints for CA certificates
+    @GetMapping("/ca/{issuerCAId}/constraints")
+    public ResponseEntity<?> getCAConstraints(@PathVariable Long issuerCAId) {
+        try {
+            // Retrieve constraints for the CA certificate from the service
+            IssuerConstraintsDTO constraints = certificateService.getCAConstraints(issuerCAId);
+
+            // If no constraints are found, return 404
+            if (constraints == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("CA certificate or constraints not found for ID: " + issuerCAId);
+            }
+
+            // Return the constraints DTO
+            return ResponseEntity.ok(constraints);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving CA constraints: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/downloads/{filename}")
+    public ResponseEntity<Resource> downloadKeystore(@PathVariable String filename) throws IOException {
+        Path filePath = Paths.get("/path/to/keystores", filename); // Location where keystores are stored
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+
+        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+    }
+
+    @GetMapping("/{id}/certificate")
+    public ResponseEntity<Resource> downloadCertificateAsPem(@PathVariable Long id) {
+        try {
+            Optional<Certificate> optionalCertificate = certificateService.findById(id);
+            if (optionalCertificate.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(null);
+            }
+
+            Certificate certificate = optionalCertificate.get();
+
+            if (certificate.getRevocationReason() != null || certificate.getRevocationDate() != null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(null);
+            }
+
+            byte[] certBytes = certificate.getX509Certificate().getEncoded();
+
+            String pemCertificate = "-----BEGIN CERTIFICATE-----\n" +
+                    java.util.Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(certBytes) +
+                    "\n-----END CERTIFICATE-----\n";
+
+            ByteArrayResource resource = new ByteArrayResource(pemCertificate.getBytes());
+            String filename = "certificate_" + certificate.getSerialNumber() + ".pem";
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(null);
+        }
+    }
 }

@@ -52,9 +52,15 @@ public class Certificate {
   @ManyToOne
   @JoinColumn(name = "parent_certificate_id")
   private Certificate parentCertificate;
-  
+
   @Transient
   private X509Certificate x509Certificate;
+
+  @Column(name = "revocation_reason")
+  private String revocationReason;
+
+  @Column(name = "revocation_date")
+  private Date revocationDate;
 
   @ManyToOne
   @JoinColumn(name = "owner_id")
@@ -81,17 +87,17 @@ public class Certificate {
       }
   }
 
-    public X509Certificate getX509Certificate() {
-        if (x509Certificate == null && x509CertificateBytes != null) {
-            try {
-                CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                x509Certificate = (X509Certificate) factory.generateCertificate(
-                        new ByteArrayInputStream(x509CertificateBytes)
-                );
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to parse X509Certificate", e);
-            }
-        }
-        return x509Certificate;
-    }
+  public X509Certificate getX509Certificate() {
+      if (x509Certificate == null && x509CertificateBytes != null) {
+          try {
+              CertificateFactory factory = CertificateFactory.getInstance("X.509");
+              x509Certificate = (X509Certificate) factory.generateCertificate(
+                      new ByteArrayInputStream(x509CertificateBytes)
+              );
+          } catch (Exception e) {
+              throw new RuntimeException("Failed to parse X509Certificate", e);
+          }
+      }
+      return x509Certificate;
+  }
 }

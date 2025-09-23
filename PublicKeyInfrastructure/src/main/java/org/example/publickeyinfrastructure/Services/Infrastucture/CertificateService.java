@@ -1,27 +1,26 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
+import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
+import org.example.publickeyinfrastructure.DTOs.Csr.IssueCertificateResponseDTO;
+import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
-import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
-import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.springframework.stereotype.Service;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
-import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
-
-
 import  org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
 
+import java.io.ByteArrayOutputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.*;
-
 
 @Service
 public class CertificateService {
@@ -29,13 +28,15 @@ public class CertificateService {
   private CertificateGeneratorService certificateGeneratorService;
   private CertificateRepository certificateRepository;
   private IssuerService issuerService;
+  private CrlService crlService;
   private AuthService authService;
 
-  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, AuthService authService) {
+  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, CrlService crlService, AuthService authService) {
     this.certificateRepository = certificateRepository;
     this.certificateGeneratorService = certificateGeneratorService;
     this.issuerService = issuerService;
     this.subjectService = subjectService;
+    this.crlService = crlService;
     this.authService = authService;
   }
   
@@ -223,9 +224,11 @@ public class CertificateService {
       }
 
       // is certificate not revoked?
-      // TODO: currently we have no implementation of revoking certificates
+      if (isCertificateRevoked(certificate)) {
+          return false;
+      }
 
-      if(certificate.getSubject().getX500NameString().equals(certificate.getIssuer().getX500NameString())) {
+      if (certificate.getSubject().getX500NameString().equals(certificate.getIssuer().getX500NameString())) {
           return true;
       }
       else {
@@ -233,4 +236,125 @@ public class CertificateService {
           return isCertificateValid(parentCertificate);
       }
   }
+
+  public boolean revokeCertificate(Long id, String reason) {
+    Optional<Certificate> optionalCertificate = certificateRepository.findById(id);
+
+    if (!optionalCertificate.isPresent()) {
+        return false;
+    }
+
+    Certificate certificate = optionalCertificate.get();
+
+    // check if certificate is already revoked
+    if (certificate.getRevocationReason() != null) {
+        return false;
+    }
+
+    certificate.setRevocationReason(reason);
+    certificate.setRevocationDate(new Date());
+    certificateRepository.save(certificate);
+
+    crlService.addCertificateToCRL(certificate);
+    return true;
+  }
+
+  public boolean isCertificateRevoked(Certificate certificate) {
+    return certificate.getRevocationReason() != null && certificate.getRevocationDate() != null;
+  }
+
+  public List<CAInfoDTO> convertToCAInfoDTOList(List<Certificate> rootCAs, List<Certificate> intermediateCAs) {
+    List<CAInfoDTO> caInfoList = new ArrayList<>();
+
+    for (Certificate cert : rootCAs) {
+        caInfoList.add(convertToCAInfoDTO(cert));
+    }
+
+    for (Certificate cert : intermediateCAs) {
+        caInfoList.add(convertToCAInfoDTO(cert));
+    }
+
+    return caInfoList;
+  }
+
+  private CAInfoDTO convertToCAInfoDTO(Certificate certificate) {
+    CAInfoDTO dto = new CAInfoDTO();
+    dto.setId(certificate.getId());
+    dto.setSerialNumber(certificate.getSerialNumber());
+    dto.setCommonName(certificate.getSubject().getCommonName()); // Assuming Subject entity has getCommonName()
+    dto.setSubjectDN(certificate.getSubject().getX500NameString());
+    dto.setIssuerDN(certificate.getIssuer().getX500NameString());
+    dto.setValidFrom(certificate.getStartDate().toString());
+    dto.setValidTo(certificate.getEndDate().toString());
+    dto.setRevoked(certificate.getRevocationReason() != null);
+    return dto;
+  }
+
+    public Optional<Certificate> findById(Long id) {
+      return certificateRepository.findById(id);
+    }
+
+    public byte[] generateKeystore(KeyPair keyPair, Certificate certificate, String keystoreFormat, String keystorePassword) {
+        try {
+            // Create a keystore of the specified type (e.g., JKS, PKCS12)
+            KeyStore keyStore = KeyStore.getInstance(keystoreFormat);
+            keyStore.load(null, keystorePassword.toCharArray());
+
+            // Add the certificate and private key to the keystore
+            X509Certificate x509Certificate = certificate.getX509Certificate();
+            keyStore.setKeyEntry(
+                    "private-key",                                        // Alias
+                    keyPair.getPrivate(),                                 // Private key
+                    keystorePassword.toCharArray(),                      // Password for accessing the private key
+                    new java.security.cert.Certificate[] {x509Certificate} // Certificate chain
+            );
+
+            // Export keystore as byte array
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            keyStore.store(outputStream, keystorePassword.toCharArray());
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate keystore: " + e.getMessage(), e);
+        }
+    }
+
+    public IssuerConstraintsDTO getCAConstraints(Long issuerCAId) {
+        Optional<Certificate> optionalCertificate = certificateRepository.findById(issuerCAId);
+        if (optionalCertificate.isEmpty()) {
+            return null;
+        }
+
+        Certificate certificate = optionalCertificate.get();
+
+        IssuerConstraintsDTO constraintsDTO = new IssuerConstraintsDTO();
+        constraintsDTO.setIssuerId(certificate.getId().toString());
+        constraintsDTO.setIssuerValidFrom(certificate.getStartDate().toString());
+        constraintsDTO.setIssuerValidTo(certificate.getEndDate().toString());
+        constraintsDTO.setIssuerRevoked(certificate.getRevocationReason() != null);
+
+        long maxTTL = Duration.between(
+                certificate.getStartDate().toInstant(),
+                certificate.getEndDate().toInstant()
+        ).toDays();
+        constraintsDTO.setMaxTTLDays((int) maxTTL);
+
+        return constraintsDTO;
+    }
+
+    public IssueCertificateResponseDTO convertToCertificateResponseDTO(Certificate certificate) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        IssueCertificateResponseDTO dto = new IssueCertificateResponseDTO();
+        dto.setId(certificate.getId());
+        dto.setSerialNumber(certificate.getSerialNumber());
+        dto.setSubjectDN(certificate.getSubject().getX500NameString());
+        dto.setIssuerDN(certificate.getIssuer().getX500NameString());
+        dto.setValidFrom(dateFormat.format(certificate.getStartDate()));
+        dto.setValidTo(dateFormat.format(certificate.getEndDate()));
+        dto.setCertificateType(certificate.getCertificateType().toString());
+        dto.setExtensions(List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER")); // Placeholder extensions
+
+        return dto;
+    }
 }
