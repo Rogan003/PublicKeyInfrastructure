@@ -1,5 +1,7 @@
 package org.example.publickeyinfrastructure.Entities.Infrastructure;
 
+import java.io.ByteArrayInputStream;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
@@ -10,6 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.example.publickeyinfrastructure.Entities.User.User;
 
 @Entity
 @Table(name = "certificates")
@@ -59,23 +62,42 @@ public class Certificate {
   @Column(name = "revocation_date")
   private Date revocationDate;
 
-    public Certificate(Subject subject, Issuer issuer, String serialNumber,
-                       Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
-                       Certificate parentCertificate) {
-        this.subject = subject;
-        this.issuer = issuer;
-        this.serialNumber = serialNumber;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.x509Certificate = x509Certificate;
-        this.certificateType = certificateType;
-        this.parentCertificate = parentCertificate;
+  @ManyToOne
+  @JoinColumn(name = "owner_id")
+  private User owner;
 
-        // Konverzija sertifikata u byte array za čuvanje u bazi
+  public Certificate(Subject subject, Issuer issuer, String serialNumber, 
+                    Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
+                     Certificate parentCertificate, User owner) {
+      this.subject = subject;
+      this.issuer = issuer;
+      this.serialNumber = serialNumber;
+      this.startDate = startDate;
+      this.endDate = endDate;
+      this.x509Certificate = x509Certificate;
+      this.certificateType = certificateType;
+      this.parentCertificate = parentCertificate;
+      this.owner = owner;
+      
+      // Konverzija sertifikata u byte array za čuvanje u bazi
       try {
           this.x509CertificateBytes = x509Certificate.getEncoded();
       } catch (Exception e) {
           e.printStackTrace();
       }
+  }
+
+  public X509Certificate getX509Certificate() {
+      if (x509Certificate == null && x509CertificateBytes != null) {
+          try {
+              CertificateFactory factory = CertificateFactory.getInstance("X.509");
+              x509Certificate = (X509Certificate) factory.generateCertificate(
+                      new ByteArrayInputStream(x509CertificateBytes)
+              );
+          } catch (Exception e) {
+              throw new RuntimeException("Failed to parse X509Certificate", e);
+          }
+      }
+      return x509Certificate;
   }
 }

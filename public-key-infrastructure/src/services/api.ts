@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation } from '../types/auth';
 import type {CACertificateInfo, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
 import type {CAInfo} from "../types/csr.ts";
+import type {CACertificateInfo, Certificate, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
 
 class ApiService {
   private api: AxiosInstance;
@@ -152,6 +153,11 @@ class ApiService {
       return response.data;
   }
 
+  async getAllCertificates(): Promise<Certificate[]> {
+      const response: AxiosResponse = await this.api.get('/certificates');
+      return response.data;
+  }
+  
   async revokeCertificate(certificateId: number, payload: { reason: string; comment?: string }): Promise<void> {
     await this.api.post(`/certificates/${certificateId}/revoke`, payload);
   }

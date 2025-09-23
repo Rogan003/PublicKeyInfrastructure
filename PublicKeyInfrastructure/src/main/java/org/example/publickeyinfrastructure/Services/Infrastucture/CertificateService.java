@@ -57,6 +57,13 @@ public class CertificateService {
   public Certificate createRootCA(CreateCertificateDTO newCertificate) {
       // Root CA signs itself
       RegularUser user = authService.getUserById(newCertificate.getOwnerId());
+
+      if (user == null || !Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
+              || !Objects.equals(user.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
+              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
+          return null;
+      }
+
       Issuer issuer = issuerService.createIssuer(new IssuerDTO(
               newCertificate.getSubject().getCommonName(),
               newCertificate.getSubject().getSurname(),
@@ -76,12 +83,20 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuer,
               sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.ROOT_CA, null);
+              certificate, CertificateType.ROOT_CA, null, user);
       certificateRepository.save(created);
       return created;
   }
 
   public Certificate createIntermediateCA(CreateCertificateDTO newCertificate) {
+      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
+
+      if (user == null || !Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
+              || !Objects.equals(user.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
+              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
+          return null;
+      }
+
       Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
 
       if (issuerCertificate == null) {
@@ -103,12 +118,20 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate);
+              certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate, user);
       certificateRepository.save(created);
       return created;
   }
 
   public Certificate createEndEntityCertificate(CreateCertificateDTO newCertificate) {
+      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
+
+      if (user == null || !Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
+              || !Objects.equals(user.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
+              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
+          return null;
+      }
+
       Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
       if (issuerCertificate == null) {
           return null;
@@ -128,7 +151,7 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(),
-              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate);
+              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate, user);
 
       certificateRepository.save(created);
       return created;

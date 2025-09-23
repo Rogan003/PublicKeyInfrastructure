@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -89,6 +89,10 @@ const Dashboard: React.FC = () => {
     toast.success('Certificate deleted');
   };
 
+  useEffect(() => {
+      apiService.getAllCertificates().then(setCertificates)
+  }, [detailsOpen, createOpen, userCreationOpen, organisationCreationOpen]);
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -114,13 +118,12 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Certificate
           </button>
-
           <button className="button-tonal" onClick={() => setCsrOpen(true)}>
             <span className="material-symbols-outlined" aria-hidden>file_upload</span>
             Request EE Certificate (CSR)
           </button>
 
-          <button className="button-tonal" onClick={handleAddUser}>
+          <button disabled={user.role !== 'ADMIN'} className="button-tonal" onClick={handleAddUser}>    
             <span className="material-symbols-outlined" aria-hidden>person_add</span>
             Add CA User
           </button>
@@ -130,7 +133,7 @@ const Dashboard: React.FC = () => {
             Create Key Pair
           </button> */}
 
-           <button className="button-tonal" onClick={handleCreateOrganisation}>
+           <button disabled={user.role !== 'ADMIN'} className="button-tonal" onClick={handleCreateOrganisation}>
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Organisation
           </button>
