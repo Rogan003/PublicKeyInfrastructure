@@ -1,23 +1,17 @@
 package org.example.publickeyinfrastructure.Controllers;
 
-import org.example.publickeyinfrastructure.DTOs.Auth.AuthResponseDTO;
-import org.example.publickeyinfrastructure.DTOs.Auth.LoginDTO;
-import org.example.publickeyinfrastructure.DTOs.Auth.PwnedDTO;
-import org.example.publickeyinfrastructure.DTOs.Auth.RegistrationDTO;
-import org.example.publickeyinfrastructure.DTOs.Auth.ResendVerificationDTO;
-import org.example.publickeyinfrastructure.DTOs.Auth.TokenRefreshDTO;
+import org.example.publickeyinfrastructure.DTOs.Auth.*;
+import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.example.publickeyinfrastructure.Services.Auth.EmailVerificationService;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerificationResult;
-import org.example.publickeyinfrastructure.Entities.User.User;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -111,6 +105,27 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/potential-owners")
+    public ResponseEntity<?> potentialOwners() {
+        try {
+            List<RegularUser> potentialOwners = authService.getPotentialOwners();
+
+            List<UserPotentialOwnerDTO> response = new ArrayList<>();
+
+            for(RegularUser user : potentialOwners) {
+                response.add(new UserPotentialOwnerDTO(
+                        user.getId(),
+                        user.getName() + " " + user.getSurname() + " - " + user.getOrganisation().getName()
+                ));
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving potential owners: " + e.getMessage());
         }
     }
     

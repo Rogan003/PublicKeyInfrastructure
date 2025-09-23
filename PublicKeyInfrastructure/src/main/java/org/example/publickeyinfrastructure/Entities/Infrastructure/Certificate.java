@@ -3,22 +3,13 @@ package org.example.publickeyinfrastructure.Entities.Infrastructure;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
+import jakarta.persistence.*;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Column;
-import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "certificates")
@@ -47,19 +38,24 @@ public class Certificate {
   
   @Column(name = "end_date")
   private Date endDate;
-  
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "certificate_type")
   private CertificateType certificateType;
-  
-  @Lob
+
   @Column(name = "x509_certificate")
   private byte[] x509CertificateBytes;
+
+  @ManyToOne
+  @JoinColumn(name = "parent_certificate_id")
+  private Certificate parentCertificate;
   
   @Transient
   private X509Certificate x509Certificate;
 
   public Certificate(Subject subject, Issuer issuer, String serialNumber, 
-                    Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType) {
+                    Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
+                     Certificate parentCertificate) {
       this.subject = subject;
       this.issuer = issuer;
       this.serialNumber = serialNumber;
@@ -67,6 +63,7 @@ public class Certificate {
       this.endDate = endDate;
       this.x509Certificate = x509Certificate;
       this.certificateType = certificateType;
+      this.parentCertificate = parentCertificate;
       
       // Konverzija sertifikata u byte array za čuvanje u bazi
       try {

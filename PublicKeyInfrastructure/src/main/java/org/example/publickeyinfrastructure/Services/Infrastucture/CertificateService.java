@@ -2,6 +2,9 @@ package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
+import org.example.publickeyinfrastructure.Entities.User.RegularUser;
+import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.springframework.stereotype.Service;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
@@ -26,12 +29,14 @@ public class CertificateService {
   private CertificateGeneratorService certificateGeneratorService;
   private CertificateRepository certificateRepository;
   private IssuerService issuerService;
+  private AuthService authService;
 
-  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService) {
+  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, AuthService authService) {
     this.certificateRepository = certificateRepository;
     this.certificateGeneratorService = certificateGeneratorService;
     this.issuerService = issuerService;
     this.subjectService = subjectService;
+    this.authService = authService;
   }
   
   public KeyPair generateKeyPair() {
@@ -50,93 +55,86 @@ public class CertificateService {
 
   public Certificate createRootCA(CreateCertificateDTO newCertificate) {
       // Root CA signs itself
-      Optional<Issuer> rootCAOptional = issuerService.getIssuerById(newCertificate.getSubject().getId());
-      if (!rootCAOptional.isPresent()) {
-          return null;
-      }
-      Issuer rootCA = rootCAOptional.get();
-      Subject rootSubject = new Subject(rootCA.getPublicKey(), rootCA.getX500Name());
+      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
+      Issuer issuer = issuerService.createIssuer(new IssuerDTO(
+              newCertificate.getSubject().getCommonName(),
+              newCertificate.getSubject().getSurname(),
+              newCertificate.getSubject().getGivenName(),
+              newCertificate.getSubject().getOrganizationName(),
+              newCertificate.getSubject().getOrganizationUnit(),
+              newCertificate.getSubject().getCountry(),
+              newCertificate.getSubject().getEmail()
+      ), user.getOrganisation());
+      Subject subject = subjectService.createSubject(newCertificate.getSubject());
 
-      List<Certificate> issuerCertificates = findBySubjectDN(rootCA.getX500NameString());
-      boolean isValidIssuerCertificate = issuerCertificates.stream()
-              .anyMatch(this::isCertificateValid);
+      String sn = String.valueOf(getAllCertificates().size());
 
-      if (!isValidIssuerCertificate) {
-          return null;
-      }
+      X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
+              issuer, newCertificate.getStartDate(), newCertificate.getEndDate(),
+              sn, newCertificate.getExtensions());
 
-      X509Certificate certificate = certificateGeneratorService.generateCertificate(rootSubject,
-              rootCA, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              UUID.randomUUID().toString(), newCertificate.getExtensions());
-
-      Certificate created = new Certificate(rootSubject, rootCA,
-              UUID.randomUUID().toString(), newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.ROOT_CA);
+      Certificate created = new Certificate(subject, issuer,
+              sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
+              certificate, CertificateType.ROOT_CA, null);
       certificateRepository.save(created);
       return created;
   }
 
   public Certificate createIntermediateCA(CreateCertificateDTO newCertificate) {
-      Optional<Certificate> issuerCertificateOptional = findBySerialNumber(newCertificate.getIssuerCertificate().getSerialNumber());
-      Optional<Subject> subjectOptional = subjectService.getSubjectById(newCertificate.getSubject().getId());
+      Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
 
-      if (!issuerCertificateOptional.isPresent() || !subjectOptional.isPresent()) {
+      if (issuerCertificate == null) {
           return null;
       }
 
-      Certificate issuerCertificate = issuerCertificateOptional.get();
-      // Subject intermediateSubject = new Subject(intermediateCA.getPublicKey(), intermediateCA.getX500Name());
-      Subject subject = subjectOptional.get();
-
-      if (subject == null) {
-          subject = subjectService.createSubject(newCertificate.getSubject());
-      }
+      Subject subject = subjectService.createSubject(newCertificate.getSubject());
 
       if (isCertificateValid(issuerCertificate)) {
           return null;
       }
 
+      String sn = String.valueOf(getAllCertificates().size());
+
       // Intermediate CA signs Root CA
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), UUID.randomUUID().toString(), newCertificate.getExtensions());
+              newCertificate.getEndDate(), sn, newCertificate.getExtensions());
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
-              UUID.randomUUID().toString(), newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.INTERMEDIATE_CA);
+              sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
+              certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate);
       certificateRepository.save(created);
       return created;
   }
 
   public Certificate createEndEntityCertificate(CreateCertificateDTO newCertificate) {
-      Optional<Certificate> issuerCertificateOptional = findBySerialNumber(newCertificate.getIssuerCertificate().getSerialNumber());
-      Optional<Subject> subjectOptional = subjectService.getSubjectById(newCertificate.getSubject().getId());
-
-      if (!issuerCertificateOptional.isPresent()) {
+      Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
+      if (issuerCertificate == null) {
           return null;
       }
 
-      Certificate issuerCertificate = issuerCertificateOptional.get();
-      Subject subject = subjectOptional.get();
-
-      if (subject == null) {
-          subject = subjectService.createSubject(newCertificate.getSubject());
-      }
+      Subject subject = subjectService.createSubject(newCertificate.getSubject());
 
       if (isCertificateValid(issuerCertificate)) {
           return null;
       }
 
+      String sn = String.valueOf(getAllCertificates().size());
+
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), UUID.randomUUID().toString(), newCertificate.getExtensions());
+              newCertificate.getEndDate(), sn, newCertificate.getExtensions());
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
-              UUID.randomUUID().toString(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY);
+              sn, newCertificate.getStartDate(),
+              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate);
 
       certificateRepository.save(created);
       return created;
+  }
+
+  public Certificate getCertificateById(Long id) {
+      return certificateRepository.findById(id).orElse(null);
   }
 
   public Optional<Certificate> findBySerialNumber(String serialNumber) {
@@ -208,12 +206,8 @@ public class CertificateService {
           return true;
       }
       else {
-          Issuer issuer = certificate.getIssuer();
-          // should we only check the certificate that issued this certificate
-          // or all certificates from the issuer?
-          List<Certificate> issuerCertificates = findByIssuerDN(issuer.getX500NameString());
-          return issuerCertificates.stream()
-                  .anyMatch(this::isCertificateValid);
+          Certificate parentCertificate = certificate.getParentCertificate();
+          return isCertificateValid(parentCertificate);
       }
   }
 }

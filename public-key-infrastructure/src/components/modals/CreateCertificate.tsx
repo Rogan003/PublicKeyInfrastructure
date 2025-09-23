@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import type { CertificateItem } from '../../types/certificates';
+import React, {useEffect, useState} from 'react';
+import type {CACertificateInfo, CreateCertificate, Subject, UserPotentialOwner} from '../../types/certificates';
+import {apiService} from "../../services/api.ts";
 
 interface CreateCertificateModalProps {
   onClose: () => void;
-  onCreate: (cert: CertificateItem) => void;
 }
 
-const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose, onCreate }) => {
+const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose }) => {
   const [commonName, setCommonName] = useState('');
   const [givenName, setGivenName] = useState('');
   const [surname, setSurname] = useState('');
@@ -14,38 +14,53 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   const [organizationUnit, setOrganizationUnit] = useState('');
   const [country, setCountry] = useState('');
   const [email, setEmail] = useState('');
-  const [owner, setOwner] = useState('');
+  const [owner, setOwner] = useState<number>(-1);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [certificateType, setCertificateType] = useState('RootCA');
-  const [issuerCA, setIssuerCA] = useState('');
+  const [issuerCA, setIssuerCA] = useState<number>(-1);
+  const [potentialOwners, setPotentialOwners] = useState<UserPotentialOwner[]>([]);
+  const [caCertificates, setCACertificates] = useState<CACertificateInfo[]>([]);
+
+  useEffect(() => {
+      apiService.getPotentialOwners().then(setPotentialOwners)
+      apiService.getAllCACertificates().then(setCACertificates)
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commonName || !givenName || !surname || !organizationName || !startDate || !endDate) return;
     if (certificateType !== 'RootCA' && !issuerCA) return;
-    
-    const newCert: CertificateItem = {
-      id: `${Date.now()}`,
-      subject: `${givenName} ${surname} (${commonName})`,
-      issuer: certificateType === 'RootCA' ? 'Self-signed' : issuerCA,
-      commonName,
-      givenName,
-      surname,
-      organizationName,
-      organizationUnit,
-      country,
-      email,
-      owner,
-      validFrom: startDate,
-      validTo: endDate,
-      status: 'Pending',
-      basicConstraints: '',
-      keyUsage: '',
-      extendedKeyUsage: '',
-      certificateType
+
+    const subject: Subject = {
+        commonName,
+        surname,
+        givenName,
+        organizationName,
+        organizationUnit,
+        country,
+        email
     };
-    onCreate(newCert);
+
+    const issuerCertificateId = issuerCA === -1 ? undefined : issuerCA
+
+    const newCert: CreateCertificate = {
+        issuerCertificateId,
+        subject,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        extensions: [], // TODO: add extensions here
+        ownerId: owner
+    };
+
+    if (certificateType === 'RootCA') {
+        apiService.createRootCertificate(newCert);
+    } else if (certificateType === 'IntermediateCA') {
+        apiService.createIntermediateCertificate(newCert);
+    } else {
+        apiService.createEndEntityCertificate(newCert);
+    }
+
     onClose();
   };
 
@@ -140,13 +155,21 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                   placeholder="Enter country"
                 />
               </label>
-              <label>
-                <span className="meta-label">Owner</span>
-                <select className="m3-select" value={owner} onChange={(e) => setOwner(e.target.value)}>
-                  <option value="">Select owner</option>
-                  <option value="owner">owner - organisation</option>
-                </select>
-              </label>
+                <label>
+                    <span className="meta-label">Owner</span>
+                    <select
+                        className="m3-select"
+                        value={owner}
+                        onChange={(e) => setOwner(Number(e.target.value))}
+                    >
+                        <option value="-1">Select owner</option>
+                        {potentialOwners.map((po) => (
+                            <option key={po.id} value={po.id}>
+                                {po.nameWithOrg}
+                            </option>
+                        ))}
+                    </select>
+                </label>
               <label>
                 <span className="meta-label">End Date</span>
                 <input 
@@ -168,7 +191,7 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                 onChange={(e) => {
                   setCertificateType(e.target.value);
                   if (e.target.value === 'RootCA') {
-                    setIssuerCA('');
+                    setIssuerCA(-1);
                   }
                 }}
               >
@@ -184,14 +207,15 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                 <select 
                   className="m3-select" 
                   value={issuerCA} 
-                  onChange={(e) => setIssuerCA(e.target.value)}
+                  onChange={(e) => setIssuerCA(Number(e.target.value))}
                   required
                 >
-                  <option value="">Select issuer CA</option>
-                  <option value="Root CA Certificate">Root CA Certificate</option>
-                  <option value="Intermediate CA 1">Intermediate CA 1</option>
-                  <option value="Intermediate CA 2">Intermediate CA 2</option>
-                  <option value="Company Root CA">Company Root CA</option>
+                    <option value="-1">Select issuer CA</option>
+                    {caCertificates.map((ca) => (
+                        <option key={ca.id} value={ca.id}>
+                            {ca.name}
+                        </option>
+                    ))}
                 </select>
               </label>
             )}

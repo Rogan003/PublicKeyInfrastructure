@@ -40,8 +40,11 @@ public class SubjectService {
       if (subjectDTO.getGivenName() != null) {
         builder.addRDN(BCStyle.GIVENNAME, subjectDTO.getGivenName());
       }
-      if (subjectDTO.getOrganization() != null) {
-        builder.addRDN(BCStyle.O, subjectDTO.getOrganization());
+      if (subjectDTO.getOrganizationName() != null) {
+        builder.addRDN(BCStyle.O, subjectDTO.getOrganizationName());
+      }
+      if (subjectDTO.getOrganizationUnit() != null) {
+          builder.addRDN(BCStyle.OU, subjectDTO.getOrganizationUnit());
       }
       if (subjectDTO.getCountry() != null) {
         builder.addRDN(BCStyle.C, subjectDTO.getCountry());
@@ -75,8 +78,6 @@ public class SubjectService {
 
   public SubjectDTO convertToDTO(Subject subject) {
     SubjectDTO dto = new SubjectDTO();
-    dto.setId(subject.getId());
-    dto.setX500Name(subject.getX500NameString());
     
     String x500String = subject.getX500NameString();
     String[] parts = x500String.split(",");
@@ -98,8 +99,11 @@ public class SubjectService {
             dto.setGivenName(value);
             break;
           case "O":
-            dto.setOrganization(value);
+            dto.setOrganizationName(value);
             break;
+            case "OU":
+              dto.setOrganizationUnit(value);
+              break;
           case "C":
             dto.setCountry(value);
             break;

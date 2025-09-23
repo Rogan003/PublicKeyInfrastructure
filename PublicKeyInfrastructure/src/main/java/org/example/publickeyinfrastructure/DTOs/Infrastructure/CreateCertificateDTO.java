@@ -14,8 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateCertificateDTO {
-    @NotNull(message = "Issuer Certificate is required!")
-    private CertificateDTO issuerCertificate;
+    private Long issuerCertificateId;
     @NotNull(message = "Subject is required!")
     private SubjectDTO subject;
     @NotNull(message = "Start Date is required!")
@@ -28,4 +27,6 @@ public class CreateCertificateDTO {
      */
     @NotNull(message = "Extensions are required!")
     private List<String> extensions;
+    @NotNull(message = "Owner must be passed")
+    private Long ownerId;
 }

@@ -1,13 +1,9 @@
 package org.example.publickeyinfrastructure.Entities.Infrastructure;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import org.example.publickeyinfrastructure.Utils.KeyUtil;
 
 @Getter
 @Setter @Entity
@@ -26,6 +22,9 @@ public class Organisation {
   @Column(name = "country")
   private String country;
 
+  @Column(name = "private_key")
+  private byte[] keyBytes;
+
   // Default constructor required by JPA
   public Organisation() {}
 
@@ -34,6 +33,21 @@ public class Organisation {
     this.name = name;
     this.unit = unit;
     this.country = country;
+
+    try {
+        this.keyBytes = KeyUtil.encryptPrivateKey(KeyUtil.generateAes256Key(), KeyUtil.getMasterKey());
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+  }
+
+  public byte[] getKeyBytes() {
+      try {
+          return KeyUtil.decryptPrivateKey(this.keyBytes, KeyUtil.getMasterKey());
+      } catch (Exception e) {
+          e.printStackTrace();
+          return null;
+      }
   }
 
 }
