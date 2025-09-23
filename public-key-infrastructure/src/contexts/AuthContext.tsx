@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, type ReactNode }
 import { apiService } from '../services/api';
 import type { JwtPayload, User } from '../types/auth';
 import { jwtDecode } from 'jwt-decode';
-import { toast } from 'react-hot-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -71,12 +70,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.login({ email, password });
       if (response.success) {
         apiService.setTokens(response.accessToken, response.refreshToken);
-        
+
+        interface JwtPayload {
+            role?: string;
+            [key: string]: any;
+        }
+
+        const token = response.accessToken;
+        const decoded = jwtDecode<JwtPayload>(token);
         const userData: User = {
-          id: 0,
-          email: response.userEmail,
-          role: 'REGULAR_USER',
-          enabled: true
+            id: decoded.userId,
+            email: decoded.sub,
+            role: decoded.role ?? "REGULAR_USER",
+            enabled: true
         };
         
         setUser(userData);
