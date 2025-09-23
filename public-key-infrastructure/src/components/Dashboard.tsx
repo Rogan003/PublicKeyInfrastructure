@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Certificate
           </button>
-          <button className="button-tonal" onClick={() => setCsrOpen(true)}>
+          <button disabled={user.role !== 'REGULAR_USER'} className="button-tonal" onClick={() => setCsrOpen(true)}>
             <span className="material-symbols-outlined" aria-hidden>file_upload</span>
             Request EE Certificate (CSR)
           </button>
