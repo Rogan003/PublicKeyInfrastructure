@@ -12,6 +12,8 @@ import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 import  org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
+
+import java.io.ByteArrayOutputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -263,5 +265,30 @@ public class CertificateService {
 
     public Optional<Certificate> findById(Long id) {
       return certificateRepository.findById(id);
+    }
+
+    public byte[] generateKeystore(KeyPair keyPair, Certificate certificate, String keystoreFormat, String keystorePassword) {
+        try {
+            // Create a keystore of the specified type (e.g., JKS, PKCS12)
+            KeyStore keyStore = KeyStore.getInstance(keystoreFormat);
+            keyStore.load(null, keystorePassword.toCharArray());
+
+            // Add the certificate and private key to the keystore
+            X509Certificate x509Certificate = certificate.getX509Certificate();
+            keyStore.setKeyEntry(
+                    "private-key",                                        // Alias
+                    keyPair.getPrivate(),                                 // Private key
+                    keystorePassword.toCharArray(),                      // Password for accessing the private key
+                    new java.security.cert.Certificate[] {x509Certificate} // Certificate chain
+            );
+
+            // Export keystore as byte array
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            keyStore.store(outputStream, keystorePassword.toCharArray());
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate keystore: " + e.getMessage(), e);
+        }
     }
 }
