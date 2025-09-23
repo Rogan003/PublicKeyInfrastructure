@@ -11,6 +11,7 @@ public class CsrDTO {
     private String surname;
     private String givenName;
     private String organization;
+    private String organizationUnit;
     private String country;
     private String email;
     private String publicKey;

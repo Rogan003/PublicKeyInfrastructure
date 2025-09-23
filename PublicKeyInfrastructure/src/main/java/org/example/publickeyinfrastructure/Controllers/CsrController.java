@@ -112,37 +112,35 @@ public class CsrController {
                 return ResponseEntity.badRequest().body("The requested validity period exceeds the limits of the selected CA certificate.");
             }
 
-            // Convert issuer Certificate to CertificateDTO
-            CertificateDTO issuerCertificateDTO = certificateService.convertToDTO(issuerCertificate);
-
-            // Convert the subject from CSR into a SubjectDTO
             SubjectDTO subjectDTO = new SubjectDTO();
-            subjectDTO.setCommonName(csrDetails.getSubject());
-            subjectDTO.setEmail(csrDetails.getSubject()); // Add any extra attributes parsed from CSR details as needed
 
-            // Prepare extensions (mocked for now, adjust dynamically if needed)
+            subjectDTO.setCommonName(csrDetails.getCommonName());
+            subjectDTO.setGivenName(csrDetails.getGivenName());
+            subjectDTO.setSurname(csrDetails.getSurname());
+            subjectDTO.setOrganizationName(csrDetails.getOrganization());
+            subjectDTO.setCountry(csrDetails.getCountry());
+            subjectDTO.setEmail(csrDetails.getEmail());
+            String organizationUnit = csrDetails.getOrganizationUnit();
+            subjectDTO.setOrganizationUnit((organizationUnit != null && !organizationUnit.isBlank()) ? organizationUnit : "Default Unit");
+            // mocked extensions for now
             List<String> extensions = List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER");
 
-            // Fetch the current user ID as the owner (assuming this information is managed by AuthService)
-            Long ownerId = authService.getCurrentUserId(); // This requires an auth service
+            Long ownerId = authService.getCurrentUserId();
 
-            // Generate the end-entity certificate using the certificate service
             Certificate issuedCertificate = certificateService.createEndEntityCertificate(
                     new CreateCertificateDTO(
-                            issuerCertificate.getId(), // Extracted issuer certificate ID
-                            subjectDTO,                // Subject DTO from CSR
-                            validityStart,             // NotBefore
-                            validityEnd,               // NotAfter
-                            extensions,                // Extensions
-                            ownerId                    // Owner ID
+                            issuerCertificate.getId(),
+                            subjectDTO,
+                            validityStart,
+                            validityEnd,
+                            extensions,
+                            ownerId
                     )
             );
 
-            // Convert the issued Certificate object to its DTO for the response
             CertificateDTO issuedCertificateDTO = certificateService.convertToDTO(issuedCertificate);
-
-            // Return created certificate details
             return ResponseEntity.ok(issuedCertificateDTO);
+
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

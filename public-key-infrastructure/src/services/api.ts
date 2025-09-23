@@ -102,7 +102,7 @@ class ApiService {
   }
 
   async getIssuerConstraints(issuerCAId: string): Promise<import('../types/csr').IssuerConstraints> {
-    const res = await this.api.get(`/ca/${issuerCAId}/constraints`);
+    const res = await this.api.get(`/certificates/ca/${issuerCAId}/constraints`);
     return res.data;
   }
 

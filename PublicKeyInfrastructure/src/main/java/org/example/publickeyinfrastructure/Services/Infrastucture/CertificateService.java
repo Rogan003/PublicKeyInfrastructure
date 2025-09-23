@@ -1,6 +1,7 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
+import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.User.RegularUser;
@@ -16,6 +17,7 @@ import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
 import java.io.ByteArrayOutputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -290,5 +292,32 @@ public class CertificateService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate keystore: " + e.getMessage(), e);
         }
+    }
+
+    public IssuerConstraintsDTO getCAConstraints(Long issuerCAId) {
+        // Fetch the CA certificate using its ID
+        Optional<Certificate> optionalCertificate = certificateRepository.findById(issuerCAId);
+
+        if (optionalCertificate.isEmpty()) {
+            return null; // Return null if no certificate is found
+        }
+
+        Certificate certificate = optionalCertificate.get();
+
+        // Build the IssuerConstraintsDTO object
+        IssuerConstraintsDTO constraintsDTO = new IssuerConstraintsDTO();
+        constraintsDTO.setIssuerId(certificate.getId().toString());
+        constraintsDTO.setIssuerValidFrom(certificate.getStartDate().toString());
+        constraintsDTO.setIssuerValidTo(certificate.getEndDate().toString());
+        constraintsDTO.setIssuerRevoked(certificate.getRevocationReason() != null);
+
+        // Optionally calculate the max TTL (in days, based on certificate validity period)
+        long maxTTL = Duration.between(
+                certificate.getStartDate().toInstant(),
+                certificate.getEndDate().toInstant()
+        ).toDays();
+        constraintsDTO.setMaxTTLDays((int) maxTTL);
+
+        return constraintsDTO;
     }
 }

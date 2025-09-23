@@ -1,5 +1,8 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.example.publickeyinfrastructure.DTOs.Csr.CsrDTO;
@@ -29,10 +32,34 @@ public class CsrService {
             csrDto.setSubject(subject.toString());
             csrDto.setPublicKey(publicKeyBase64);
 
+            // Parse specific fields from the X500Name
+            parseX500Name(subject, csrDto);
+
             return csrDto;
 
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to process CSR: " + e.getMessage());
         }
+    }
+
+    /**
+     * Parse fields (e.g., CN, O, C, E) from the X500 name and populate the CsrDTO.
+     */
+    private void parseX500Name(X500Name subject, CsrDTO csrDto) {
+        csrDto.setCommonName(getRDNValue(subject, BCStyle.CN));
+        csrDto.setSurname(getRDNValue(subject, BCStyle.SURNAME));
+        csrDto.setGivenName(getRDNValue(subject, BCStyle.GIVENNAME));
+        csrDto.setOrganization(getRDNValue(subject, BCStyle.O));
+        csrDto.setOrganizationUnit(getRDNValue(subject, BCStyle.OU)); // Parse OU here
+        csrDto.setCountry(getRDNValue(subject, BCStyle.C));
+        csrDto.setEmail(getRDNValue(subject, BCStyle.E));
+    }
+
+    private String getRDNValue(X500Name name, ASN1ObjectIdentifier identifier) {
+        RDN[] rdns = name.getRDNs(identifier);
+        if (rdns != null && rdns.length > 0) {
+            return rdns[0].getFirst().getValue().toString();
+        }
+        return null;
     }
 }

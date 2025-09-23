@@ -2,6 +2,7 @@ package org.example.publickeyinfrastructure.Services.Auth;
 
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.example.publickeyinfrastructure.DTOs.Auth.AuthResponseDTO;
 import org.example.publickeyinfrastructure.DTOs.Auth.LoginDTO;
 import org.example.publickeyinfrastructure.DTOs.Auth.PwnedDTO;
@@ -13,6 +14,8 @@ import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.example.publickeyinfrastructure.Repositories.UserRepository;
 import org.example.publickeyinfrastructure.Utils.JwtUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 
@@ -168,19 +171,24 @@ public class AuthService  {
     }
 
     private String getTokenFromRequest() {
-        // Retrieve the token from the `Authorization` header in the current context
-        String bearerToken = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getCredentials()
-                .toString();
+        // Get the current HTTP request
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            throw new IllegalStateException("No current HTTP request found.");
+        }
+        HttpServletRequest request = attributes.getRequest();
 
-        // Ensure the token follows the "Bearer <token>" format
+        // Get the Authorization header
+        String bearerToken = request.getHeader("Authorization");
+
+        // Ensure the Authorization header is in the correct "Bearer <token>" format
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7); // Strip "Bearer " from the token
         } else {
-            throw new IllegalStateException("Invalid or missing token.");
+            throw new IllegalStateException("Invalid or missing Authorization header.");
         }
     }
+
 
     public AuthResponseDTO refreshToken(TokenRefreshDTO tokenRefreshDTO) {
         String refreshToken = tokenRefreshDTO.getRefreshToken();

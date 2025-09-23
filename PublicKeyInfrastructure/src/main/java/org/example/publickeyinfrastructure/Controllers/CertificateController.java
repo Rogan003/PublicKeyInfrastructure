@@ -1,6 +1,7 @@
 package org.example.publickeyinfrastructure.Controllers;
 
 import jakarta.validation.Valid;
+import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CACertificateInfoDTO;
 import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
@@ -267,6 +268,27 @@ public class CertificateController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error retrieving CAs: " + e.getMessage());
+        }
+    }
+
+    // Fetch constraints for CA certificates
+    @GetMapping("/ca/{issuerCAId}/constraints")
+    public ResponseEntity<?> getCAConstraints(@PathVariable Long issuerCAId) {
+        try {
+            // Retrieve constraints for the CA certificate from the service
+            IssuerConstraintsDTO constraints = certificateService.getCAConstraints(issuerCAId);
+
+            // If no constraints are found, return 404
+            if (constraints == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("CA certificate or constraints not found for ID: " + issuerCAId);
+            }
+
+            // Return the constraints DTO
+            return ResponseEntity.ok(constraints);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving CA constraints: " + e.getMessage());
         }
     }
 }

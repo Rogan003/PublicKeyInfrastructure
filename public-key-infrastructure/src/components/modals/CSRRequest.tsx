@@ -237,7 +237,7 @@ const CSRRequestModal: React.FC<CSRRequestModalProps> = ({ onClose, onIssued }) 
 
                     {(() => {
                         const err = notBefore && notAfter ? withinIssuerLimits(notBefore, notAfter, constraints) : null;
-                        return err ? <div className="error" role="alert">{err}</div> : null;
+                        return err ? <div className="error" style={{marginBottom: '20px'}} role="alert">{err}</div> : null;
                     })()}
 
                     {activeTab === 'UPLOAD' && (
