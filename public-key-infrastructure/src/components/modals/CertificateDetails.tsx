@@ -27,7 +27,17 @@ const CertificateDetailsModal: React.FC<CertificateDetailsModalProps> = ({ certi
             <div><span className="meta-label">Valid from</span><span className="meta-value">{certificate.validFrom}</span></div>
             <div><span className="meta-label">Valid to</span><span className="meta-value">{certificate.validTo}</span></div>
             <h4>Extensions</h4>
-              {/* TODO: Add extensions here */}
+              <div><span className="meta-label">Basic constraints</span><span className="meta-value">{certificate.isCa ? "CA" : "End-entity"}</span></div>
+              <div><span className="meta-label">Key usage</span><span className="meta-value">{certificate.keyUsages.map((keyUsage) => (
+                  <span>
+                      {keyUsage},
+                  </span>
+              ))}</span></div>
+              <div><span className="meta-label">Extended key usage</span><span className="meta-value">{certificate.extendedKeyUsages.map((extendedKeyUsage) => (
+                  <span>
+                      {extendedKeyUsage},
+                  </span>
+              ))}</span></div>
           </div>
         </div>
       </div>

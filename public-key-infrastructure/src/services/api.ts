@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation } from '../types/auth';
-import type {CACertificateInfo, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
+import type {CACertificateInfo, Certificate, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
 
 class ApiService {
   private api: AxiosInstance;
@@ -118,6 +118,11 @@ class ApiService {
 
   async getAllCACertificates(): Promise<CACertificateInfo[]> {
       const response: AxiosResponse = await this.api.get('/certificates/ca-certificates');
+      return response.data;
+  }
+
+  async getAllCertificates(): Promise<Certificate[]> {
+      const response: AxiosResponse = await this.api.get('/certificates');
       return response.data;
   }
 

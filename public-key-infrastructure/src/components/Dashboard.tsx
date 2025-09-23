@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import CertificateDetailsModal from './modals/CertificateDetails';
 import CreateCertificateModal from './modals/CreateCertificate';
 import UserCreationModal from './modals/UserCreation';
 import CreateOrganisationModal from './modals/CreateOrganisation';
+import {apiService} from "../services/api.ts";
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -64,6 +65,10 @@ const Dashboard: React.FC = () => {
     setCertificates(prev => prev.filter(c => c.id !== cert.id));
     toast.success('Certificate deleted');
   };
+
+  useEffect(() => {
+      apiService.getAllCertificates().then(setCertificates)
+  }, [detailsOpen, createOpen, userCreationOpen, organisationCreationOpen]);
 
   if (!user) {
     return <div>Loading...</div>;

@@ -37,5 +37,7 @@ export interface Certificate {
     issuer: string;
     validFrom: string;
     validTo: string;
-    extensions: string[];
+    isCa: boolean;
+    keyUsages: string[];
+    extendedKeyUsages: string[];
 }
