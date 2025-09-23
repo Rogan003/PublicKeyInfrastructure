@@ -9,6 +9,7 @@ import CertificateDetailsModal from './modals/CertificateDetails';
 import CreateCertificateModal from './modals/CreateCertificate';
 import UserCreationModal from './modals/UserCreation';
 import CreateOrganisationModal from './modals/CreateOrganisation';
+import CSRRequestModal from './modals/CSRRequest';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -18,6 +19,7 @@ const Dashboard: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [userCreationOpen, setUserCreationOpen] = useState(false);
   const [organisationCreationOpen, setOrganisationCreationOpen] = useState(false);
+  const [csrOpen, setCsrOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -27,7 +29,6 @@ const Dashboard: React.FC = () => {
   const handleCreateCertificate = () => {
     setCreateOpen(true);
   };
-
 
   const handleAddUser = () => {
     setUserCreationOpen(true);
@@ -90,14 +91,22 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Certificate
           </button>
+
+          <button className="button-tonal" onClick={() => setCsrOpen(true)}>
+            <span className="material-symbols-outlined" aria-hidden>file_upload</span>
+            Request EE Certificate (CSR)
+          </button>
+
           <button className="button-tonal" onClick={handleAddUser}>
             <span className="material-symbols-outlined" aria-hidden>person_add</span>
             Add CA User
           </button>
+
           {/* <button className="button-tonal" onClick={handleCreateKeyPair}>
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Key Pair
           </button> */}
+
            <button className="button-tonal" onClick={handleCreateOrganisation}>
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Organisation
@@ -122,10 +131,12 @@ const Dashboard: React.FC = () => {
                     <span className="material-symbols-outlined" aria-hidden>visibility</span>
                     View
                   </button>
+
                   <button className="button-tonal" onClick={() => handleDownload(cert)}>
                     <span className="material-symbols-outlined" aria-hidden>download</span>
                     Download 
                   </button>
+
                   <button disabled={user.role !== 'ADMIN'} className="button-danger" onClick={() => handleDelete(cert)}>
                     <span className="material-symbols-outlined" aria-hidden>delete</span>
                     Revoke
@@ -147,6 +158,35 @@ const Dashboard: React.FC = () => {
       )}
       {organisationCreationOpen && (
         <CreateOrganisationModal onClose={() => setOrganisationCreationOpen(false)} onCreate={handleOrganisationCreated} />
+      )}
+      {csrOpen && (
+        <CSRRequestModal
+          onClose={() => setCsrOpen(false)}
+          onIssued={(res) => {
+            // Optionally push into visible list to reflect issuance
+            const c: CertificateItem = {
+              id: res.certificateId,
+              subject: 'New EE Certificate',
+              issuer: 'Selected CA',
+              commonName: '',
+              givenName: '',
+              surname: '',
+              organizationName: '',
+              organizationUnit: '',
+              country: '',
+              email: '',
+              owner: user.email,
+              validFrom: '',
+              validTo: '',
+              status: 'Pending',
+              basicConstraints: '',
+              keyUsage: '',
+              extendedKeyUsage: '',
+              certificateType: 'End-Entity'
+            };
+            setCertificates(prev => [c, ...prev]);
+          }}
+        />
       )}
     </div>
   );
