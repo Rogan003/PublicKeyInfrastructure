@@ -11,6 +11,8 @@ import UserCreationModal from './modals/UserCreation';
 import CreateOrganisationModal from './modals/CreateOrganisation';
 import CSRRequestModal from './modals/CSRRequest';
 import type {IssueCertificateResponse} from "../types/csr.ts";
+import RevocationReason from "./modals/RevocationReason.tsx";
+import {apiService} from "../services/api.ts";
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -21,6 +23,26 @@ const Dashboard: React.FC = () => {
   const [userCreationOpen, setUserCreationOpen] = useState(false);
   const [organisationCreationOpen, setOrganisationCreationOpen] = useState(false);
   const [csrOpen, setCsrOpen] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState<Certificate | null>(null);
+
+  const handleRevokeCertificate = (cert: Certificate) => {
+    setRevokeOpen(cert); // Open revocation modal for this certificate
+  };
+
+  const handleRevokeConfirmed = async (reason: string, comment?: string) => {
+    try {
+        if (!revokeOpen) return;
+        await apiService.revokeCertificate(revokeOpen.id, { reason, comment });
+        setCertificates(prev => prev.filter(c => c.id !== revokeOpen.id));
+        toast.success('Certificate revoked successfully');
+
+    } catch (error: any) {
+        toast.error(error?.message || 'Failed to revoke the certificate');
+
+    } finally {
+        setRevokeOpen(null);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -111,7 +133,8 @@ const Dashboard: React.FC = () => {
            <button className="button-tonal" onClick={handleCreateOrganisation}>
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Organisation
-          </button> 
+          </button>
+
         </div>
 
           <div className="dashboard-card">
@@ -184,7 +207,7 @@ const Dashboard: React.FC = () => {
                                   Download
                               </button>
 
-                              <button disabled={user.role !== 'ADMIN'} className="button-danger" onClick={() => handleDelete(cert)}>
+                              <button className="button-danger" onClick={() => handleRevokeCertificate(cert)}>
                                   <span className="material-symbols-outlined" aria-hidden>delete</span>
                                   Revoke
                               </button>
@@ -195,6 +218,12 @@ const Dashboard: React.FC = () => {
           </div>
 
       </main>
+      {revokeOpen && (
+        <RevocationReason
+            onClose={() => setRevokeOpen(null)}
+            onConfirm={handleRevokeConfirmed}
+        />
+      )}
       {detailsOpen && (
         <CertificateDetailsModal certificate={detailsOpen} onClose={() => setDetailsOpen(null)} />
       )}

@@ -152,6 +152,10 @@ class ApiService {
       return response.data;
   }
 
+  async revokeCertificate(certificateId: number, payload: { reason: string; comment?: string }): Promise<void> {
+    await this.api.post(`/certificates/${certificateId}/revoke`, payload);
+  }
+
   // Token management
   setTokens(accessToken: string, refreshToken: string): void {
     localStorage.setItem('accessToken', accessToken);
