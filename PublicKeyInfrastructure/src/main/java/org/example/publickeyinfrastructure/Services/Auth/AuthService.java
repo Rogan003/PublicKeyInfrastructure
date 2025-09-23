@@ -161,7 +161,27 @@ public class AuthService  {
             new PwnedDTO(false, 0)
         );
     }
-    
+
+    public Long getCurrentUserId() {
+        String token = getTokenFromRequest();
+        return jwtUtil.extractUserId(token);
+    }
+
+    private String getTokenFromRequest() {
+        // Retrieve the token from the `Authorization` header in the current context
+        String bearerToken = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getCredentials()
+                .toString();
+
+        // Ensure the token follows the "Bearer <token>" format
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // Strip "Bearer " from the token
+        } else {
+            throw new IllegalStateException("Invalid or missing token.");
+        }
+    }
+
     public AuthResponseDTO refreshToken(TokenRefreshDTO tokenRefreshDTO) {
         String refreshToken = tokenRefreshDTO.getRefreshToken();
         

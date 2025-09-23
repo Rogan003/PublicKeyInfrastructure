@@ -5,6 +5,7 @@ import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
+import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateService;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CsrService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ public class CsrController {
     private CsrService csrService;
     @Autowired
     private CertificateService certificateService;
+    @Autowired
+    private AuthService authService;
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadCsr(@RequestParam("file") MultipartFile file) {
@@ -120,14 +123,18 @@ public class CsrController {
             // Prepare extensions (mocked for now, adjust dynamically if needed)
             List<String> extensions = List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER");
 
+            // Fetch the current user ID as the owner (assuming this information is managed by AuthService)
+            Long ownerId = authService.getCurrentUserId(); // This requires an auth service
+
             // Generate the end-entity certificate using the certificate service
             Certificate issuedCertificate = certificateService.createEndEntityCertificate(
                     new CreateCertificateDTO(
-                            issuerCertificateDTO,  // Issuer Certificate DTO
-                            subjectDTO,            // Subject DTO from CSR
-                            validityStart,         // NotBefore
-                            validityEnd,           // NotAfter
-                            extensions             // Extensions
+                            issuerCertificate.getId(), // Extracted issuer certificate ID
+                            subjectDTO,                // Subject DTO from CSR
+                            validityStart,             // NotBefore
+                            validityEnd,               // NotAfter
+                            extensions,                // Extensions
+                            ownerId                    // Owner ID
                     )
             );
 
@@ -136,7 +143,6 @@ public class CsrController {
 
             // Return created certificate details
             return ResponseEntity.ok(issuedCertificateDTO);
-
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -202,23 +208,26 @@ public class CsrController {
             // Prepare the SubjectDTO with provided details
             SubjectDTO subjectDTO = new SubjectDTO();
             subjectDTO.setCommonName(subject.getCN());
-            subjectDTO.setOrganization(subject.getO());
-            subjectDTO.setOrganization(subject.getOU());
+            subjectDTO.setOrganizationName(subject.getO());
+            subjectDTO.setOrganizationUnit(subject.getOU());
             subjectDTO.setCountry(subject.getC());
             subjectDTO.setEmail(subject.getE());
-            subjectDTO.setX500Name(constructX500Name(subject)); // Generate full X500 Name
 
             // Prepare certificate extensions (fixed here, adjust dynamically as needed)
             List<String> extensions = List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER");
 
+            // Fetch the current user ID as the owner
+            Long ownerId = authService.getCurrentUserId();
+
             // Create the certificate with the generated data
             Certificate issuedCertificate = certificateService.createEndEntityCertificate(
                     new CreateCertificateDTO(
-                            issuerCertificateDTO,  // Issuer CA certificate
-                            subjectDTO,            // Subject for the certificate
-                            validityStart,         // Start date
-                            validityEnd,           // End date
-                            extensions             // Supported extensions
+                            issuerCertificate.getId(), // Extracted issuer certificate ID
+                            subjectDTO,                // Subject for the certificate
+                            validityStart,             // Start date
+                            validityEnd,               // End date
+                            extensions,                // Supported extensions
+                            ownerId                    // Owner ID
                     )
             );
 

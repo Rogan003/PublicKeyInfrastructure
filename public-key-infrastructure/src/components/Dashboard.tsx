@@ -163,28 +163,16 @@ const Dashboard: React.FC = () => {
         <CSRRequestModal
           onClose={() => setCsrOpen(false)}
           onIssued={(res) => {
-            // Optionally push into visible list to reflect issuance
-            const c: CertificateItem = {
-              id: res.certificateId,
-              subject: 'New EE Certificate',
-              issuer: 'Selected CA',
-              commonName: '',
-              givenName: '',
-              surname: '',
-              organizationName: '',
-              organizationUnit: '',
-              country: '',
-              email: '',
-              owner: user.email,
-              validFrom: '',
-              validTo: '',
-              status: 'Pending',
-              basicConstraints: '',
-              keyUsage: '',
-              extendedKeyUsage: '',
-              certificateType: 'End-Entity'
-            };
-            setCertificates(prev => [c, ...prev]);
+              // Optionally push into visible list to reflect issuance
+              const c: Certificate = {
+                  id: Number(res.certificateId) || Date.now(),
+                  subject: 'New EE Certificate',
+                  issuer: 'Selected CA',
+                  validFrom: '',
+                  validTo: '',
+                  extensions: [],
+              };
+              setCertificates(prev => [c, ...prev]);
           }}
         />
       )}
