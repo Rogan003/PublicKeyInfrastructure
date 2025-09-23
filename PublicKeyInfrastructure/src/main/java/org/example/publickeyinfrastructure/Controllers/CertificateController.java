@@ -2,10 +2,10 @@ package org.example.publickeyinfrastructure.Controllers;
 
 import jakarta.validation.Valid;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CACertificateInfoDTO;
+import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
-import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -154,7 +154,7 @@ public class CertificateController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("There is no issuer certificate!");
             }
-            
+
             Certificate intermediateCA = certificateService.createIntermediateCA(request);
             if (intermediateCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(intermediateCA);
@@ -232,4 +232,41 @@ public class CertificateController {
         }
     }
 
+    @PostMapping("/{id}/revoke")
+    public ResponseEntity<?> revokeCertificate(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String reason = request.get("reason");
+
+            if (reason == null || reason.isEmpty()) {
+                return ResponseEntity.badRequest().body("Revocation reason is required");
+            }
+
+            boolean revoked = certificateService.revokeCertificate(id, reason);
+            if (!revoked) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Certificate could not be revoked. It may not exist or is already revoked.");
+            }
+
+            return ResponseEntity.ok("Certificate revoked successfully");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error revoking certificate: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/ca")
+    public ResponseEntity<?> getAllCAs() {
+        try {
+            List<Certificate> caCertificates = certificateService.findByCertificateType(CertificateType.ROOT_CA);
+            List<Certificate> intermediateCertificates = certificateService.findByCertificateType(CertificateType.INTERMEDIATE_CA);
+
+            List<CAInfoDTO> responseDTO = certificateService.convertToCAInfoDTOList(caCertificates, intermediateCertificates);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error retrieving CAs: " + e.getMessage());
+        }
+    }
 }

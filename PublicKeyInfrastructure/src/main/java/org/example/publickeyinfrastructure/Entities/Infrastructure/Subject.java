@@ -58,5 +58,24 @@ public class Subject {
         }
         return x500Name;
     }
+
+    public String getCommonName() {
+        if (this.x500Name != null) {
+            return x500Name.getRDNs(org.bouncycastle.asn1.x500.style.BCStyle.CN).length > 0
+                    ? x500Name.getRDNs(org.bouncycastle.asn1.x500.style.BCStyle.CN)[0].getFirst().getValue().toString()
+                    : null;
+
+        } else if (this.x500NameString != null) {
+            String[] attributes = this.x500NameString.split(", ");
+            for (String attribute : attributes) {
+                if (attribute.startsWith("CN=")) {
+                    return attribute.substring(3);
+                }
+            }
+        }
+
+        return null;
+    }
+
 }
 

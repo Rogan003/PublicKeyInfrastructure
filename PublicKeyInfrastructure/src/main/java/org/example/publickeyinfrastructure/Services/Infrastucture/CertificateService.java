@@ -1,27 +1,20 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
+import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
-import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
-import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
+import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.springframework.stereotype.Service;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CertificateDTO;
-import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
-
-
 import  org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
-
 import java.security.*;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
-
 
 @Service
 public class CertificateService {
@@ -29,13 +22,15 @@ public class CertificateService {
   private CertificateGeneratorService certificateGeneratorService;
   private CertificateRepository certificateRepository;
   private IssuerService issuerService;
+  private CrlService crlService;
   private AuthService authService;
 
-  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, AuthService authService) {
+  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, CrlService crlService, AuthService authService) {
     this.certificateRepository = certificateRepository;
     this.certificateGeneratorService = certificateGeneratorService;
     this.issuerService = issuerService;
     this.subjectService = subjectService;
+    this.crlService = crlService;
     this.authService = authService;
   }
   
@@ -200,9 +195,11 @@ public class CertificateService {
       }
 
       // is certificate not revoked?
-      // TODO: currently we have no implementation of revoking certificates
+      if (isCertificateRevoked(certificate)) {
+          return false;
+      }
 
-      if(certificate.getSubject().getX500NameString().equals(certificate.getIssuer().getX500NameString())) {
+      if (certificate.getSubject().getX500NameString().equals(certificate.getIssuer().getX500NameString())) {
           return true;
       }
       else {
@@ -210,4 +207,61 @@ public class CertificateService {
           return isCertificateValid(parentCertificate);
       }
   }
+
+  public boolean revokeCertificate(Long id, String reason) {
+    Optional<Certificate> optionalCertificate = certificateRepository.findById(id);
+
+    if (!optionalCertificate.isPresent()) {
+        return false;
+    }
+
+    Certificate certificate = optionalCertificate.get();
+
+    // check if certificate is already revoked
+    if (certificate.getRevocationReason() != null) {
+        return false;
+    }
+
+    certificate.setRevocationReason(reason);
+    certificate.setRevocationDate(new Date());
+    certificateRepository.save(certificate);
+
+    crlService.addCertificateToCRL(certificate);
+    return true;
+  }
+
+  public boolean isCertificateRevoked(Certificate certificate) {
+    return certificate.getRevocationReason() != null && certificate.getRevocationDate() != null;
+  }
+
+  public List<CAInfoDTO> convertToCAInfoDTOList(List<Certificate> rootCAs, List<Certificate> intermediateCAs) {
+    List<CAInfoDTO> caInfoList = new ArrayList<>();
+
+    for (Certificate cert : rootCAs) {
+        caInfoList.add(convertToCAInfoDTO(cert));
+    }
+
+    for (Certificate cert : intermediateCAs) {
+        caInfoList.add(convertToCAInfoDTO(cert));
+    }
+
+    return caInfoList;
+  }
+
+  private CAInfoDTO convertToCAInfoDTO(Certificate certificate) {
+    CAInfoDTO dto = new CAInfoDTO();
+    dto.setId(certificate.getId());
+    dto.setSerialNumber(certificate.getSerialNumber());
+    dto.setCommonName(certificate.getSubject().getCommonName()); // Assuming Subject entity has getCommonName()
+    dto.setSubjectDN(certificate.getSubject().getX500NameString());
+    dto.setIssuerDN(certificate.getIssuer().getX500NameString());
+    dto.setValidFrom(certificate.getStartDate().toString());
+    dto.setValidTo(certificate.getEndDate().toString());
+    dto.setRevoked(certificate.getRevocationReason() != null);
+    return dto;
+  }
+
+    public Optional<Certificate> findById(Long id) {
+      return certificateRepository.findById(id);
+    }
 }

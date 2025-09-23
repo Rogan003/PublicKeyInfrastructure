@@ -49,23 +49,29 @@ public class Certificate {
   @ManyToOne
   @JoinColumn(name = "parent_certificate_id")
   private Certificate parentCertificate;
-  
+
   @Transient
   private X509Certificate x509Certificate;
 
-  public Certificate(Subject subject, Issuer issuer, String serialNumber, 
-                    Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
-                     Certificate parentCertificate) {
-      this.subject = subject;
-      this.issuer = issuer;
-      this.serialNumber = serialNumber;
-      this.startDate = startDate;
-      this.endDate = endDate;
-      this.x509Certificate = x509Certificate;
-      this.certificateType = certificateType;
-      this.parentCertificate = parentCertificate;
-      
-      // Konverzija sertifikata u byte array za čuvanje u bazi
+  @Column(name = "revocation_reason")
+  private String revocationReason;
+
+  @Column(name = "revocation_date")
+  private Date revocationDate;
+
+    public Certificate(Subject subject, Issuer issuer, String serialNumber,
+                       Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
+                       Certificate parentCertificate) {
+        this.subject = subject;
+        this.issuer = issuer;
+        this.serialNumber = serialNumber;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.x509Certificate = x509Certificate;
+        this.certificateType = certificateType;
+        this.parentCertificate = parentCertificate;
+
+        // Konverzija sertifikata u byte array za čuvanje u bazi
       try {
           this.x509CertificateBytes = x509Certificate.getEncoded();
       } catch (Exception e) {
