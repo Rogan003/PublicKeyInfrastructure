@@ -3,22 +3,13 @@ package org.example.publickeyinfrastructure.Entities.Infrastructure;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
+import jakarta.persistence.*;
 import org.example.publickeyinfrastructure.Entities.Enums.CertificateType;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Column;
-import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "certificates")
@@ -47,11 +38,11 @@ public class Certificate {
   
   @Column(name = "end_date")
   private Date endDate;
-  
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "certificate_type")
   private CertificateType certificateType;
-  
-  @Lob
+
   @Column(name = "x509_certificate")
   private byte[] x509CertificateBytes;
 

@@ -31,7 +31,7 @@ public class Issuer {
   @Column(name = "public_key")
   private byte[] publicKeyBytes;
   
-  @Column(name = "x500_name", length = 1000)
+  @Column(name = "x500_name")
   private String x500NameString;
   
   @Transient
@@ -73,4 +73,11 @@ public class Issuer {
           return null;
       }
   }
+
+    public X500Name getX500Name() {
+        if (x500Name == null && x500NameString != null) {
+            x500Name = new X500Name(x500NameString);
+        }
+        return x500Name;
+    }
 }
