@@ -24,7 +24,7 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
 
   const availableExtensions = [
-    { value: 'KEY_USAGE', label: 'Key Usage' },
+    { value: 'KEY_USAGE', label: 'Key Usage - digitalSignature | keyEncipherment' },
     { value: 'EXT_KEY_SERVER', label: 'Extended Key Usage - Server Auth' },
     { value: 'EXT_KEY_CLIENT', label: 'Extended Key Usage - Client Auth' },
     { value: 'SAN', label: 'Subject Alternative Name' }
@@ -71,13 +71,14 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
     };
 
     if (certificateType === 'RootCA') {
-        setSelectedExtensions(["BASIC_CA", ...selectedExtensions]);
+        newCert.extensions.push("BASIC_CA");
+        setSelectedExtensions([...selectedExtensions, "BASIC_CA"]);
         apiService.createRootCertificate(newCert);
     } else if (certificateType === 'IntermediateCA') {
-        setSelectedExtensions(["BASIC_CA", ...selectedExtensions]);
+        newCert.extensions.push("BASIC_CA");
         apiService.createIntermediateCertificate(newCert);
     } else {
-        setSelectedExtensions(["BASIC_END", ...selectedExtensions]);
+        newCert.extensions.push("BASIC_END");
         apiService.createEndEntityCertificate(newCert);
     }
 
