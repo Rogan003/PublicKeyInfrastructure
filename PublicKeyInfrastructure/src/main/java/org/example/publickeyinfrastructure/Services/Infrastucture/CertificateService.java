@@ -76,7 +76,7 @@ public class CertificateService {
               newCertificate.getSubject().getCountry(),
               newCertificate.getSubject().getEmail()
       ), user.getOrganisation());
-      Subject subject = subjectService.createSubject(newCertificate.getSubject());
+      Subject subject = subjectService.createSubject(newCertificate.getSubject(), user.getOrganisation());
 
       String sn = String.valueOf(getAllCertificates().size());
 
@@ -122,7 +122,7 @@ public class CertificateService {
           return null;
       }
 
-      Subject subject = subjectService.createSubject(newCertificate.getSubject());
+      Subject subject = subjectService.createSubject(newCertificate.getSubject(), organisation);
 
       if (isCertificateValid(issuerCertificate)) {
           return null;
@@ -143,20 +143,24 @@ public class CertificateService {
   }
 
   public Certificate createEndEntityCertificate(CreateCertificateDTO newCertificate) {
-      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
-
-      if (user == null || !Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
-              || !Objects.equals(user.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
-              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
-          return null;
-      }
-
       Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
       if (issuerCertificate == null) {
           return null;
       }
 
-      Subject subject = subjectService.createSubject(newCertificate.getSubject());
+      if (!Objects.equals(issuerCertificate.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
+              || !Objects.equals(issuerCertificate.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
+              !Objects.equals(issuerCertificate.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
+          return null;
+      }
+
+      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
+
+      if (user == null) {
+          return null;
+      }
+
+      Subject subject = subjectService.createSubject(newCertificate.getSubject(), issuerCertificate.getOrganisation());
 
       if (isCertificateValid(issuerCertificate)) {
           return null;
@@ -171,7 +175,7 @@ public class CertificateService {
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(),
               newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate,
-              user, user.getOrganisation());
+              user, issuerCertificate.getOrganisation());
 
       certificateRepository.save(created);
       return created;
