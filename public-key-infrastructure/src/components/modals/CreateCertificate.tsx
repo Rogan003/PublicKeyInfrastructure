@@ -41,6 +41,11 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
 
   useEffect(() => {
       apiService.getAllCACertificates().then(setCACertificates)
+      if (user?.role === "CERTIFICATE_AUTHORITY") {
+          setCertificateType("IntermediateCA");
+      } else {
+          setCertificateType("EndEntity");
+      }
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -197,8 +202,14 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                       }
                     }}
                   >
-                    <option value="RootCA">Root CA</option>
-                    <option value="IntermediateCA">Intermediate CA</option>
+                      {
+                          user?.role === "ADMIN" &&
+                          <option value="RootCA">Root CA</option>
+                      }
+                      {
+                          user?.role === "ADMIN" || user?.role === "CERTIFICATE_AUTHORITY" &&
+                          <option value="IntermediateCA">Intermediate CA</option>
+                      }
                     <option value="EndEntity">End Entity</option>
                   </select>
                 </label>
