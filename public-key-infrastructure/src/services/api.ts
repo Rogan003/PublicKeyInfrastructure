@@ -1,8 +1,7 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation } from '../types/auth';
-import type {CACertificateInfo, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
 import type {CAInfo} from "../types/csr.ts";
-import type {CACertificateInfo, Certificate, CreateCertificate, UserPotentialOwner} from "../types/certificates.ts";
+import type {CACertificateInfo, Certificate, CreateCertificate} from "../types/certificates.ts";
 
 class ApiService {
   private api: AxiosInstance;
@@ -141,11 +140,6 @@ class ApiService {
   async createEndEntityCertificate(certificate: CreateCertificate): Promise<any> {
     const response: AxiosResponse = await this.api.post('/certificates/end-entity', certificate);
     return response.data;
-  }
-
-  async getPotentialOwners(): Promise<UserPotentialOwner[]> {
-      const response: AxiosResponse = await this.api.get('/auth/potential-owners');
-      return response.data;
   }
 
   async getAllCACertificates(): Promise<CACertificateInfo[]> {

@@ -1,12 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import type {CACertificateInfo, CreateCertificate, Subject, UserPotentialOwner} from '../../types/certificates';
+import type {CACertificateInfo, CreateCertificate, Subject} from '../../types/certificates';
 import {apiService} from "../../services/api.ts";
+import {useAuth} from "../../contexts/AuthContext.tsx";
 
 interface CreateCertificateModalProps {
   onClose: () => void;
 }
 
 const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose }) => {
+    const { user } = useAuth();
   const [commonName, setCommonName] = useState('');
   const [givenName, setGivenName] = useState('');
   const [surname, setSurname] = useState('');
@@ -14,12 +16,10 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   const [organizationUnit, setOrganizationUnit] = useState('');
   const [country, setCountry] = useState('');
   const [email, setEmail] = useState('');
-  const [owner, setOwner] = useState<number>(-1);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [certificateType, setCertificateType] = useState('RootCA');
   const [issuerCA, setIssuerCA] = useState<number>(-1);
-  const [potentialOwners, setPotentialOwners] = useState<UserPotentialOwner[]>([]);
   const [caCertificates, setCACertificates] = useState<CACertificateInfo[]>([]);
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
 
@@ -40,7 +40,6 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   };
 
   useEffect(() => {
-      apiService.getPotentialOwners().then(setPotentialOwners)
       apiService.getAllCACertificates().then(setCACertificates)
   }, [])
 
@@ -61,13 +60,14 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
 
     const issuerCertificateId = issuerCA === -1 ? undefined : issuerCA
 
+
     const newCert: CreateCertificate = {
         issuerCertificateId,
         subject,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         extensions: selectedExtensions,
-        ownerId: owner
+        ownerId: user?.id ?? -1
     };
 
     if (certificateType === 'RootCA') {
@@ -172,21 +172,6 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                     onChange={(e) => setCountry(e.target.value)} 
                     placeholder="Enter country"
                   />
-                </label>
-                <label>
-                  <span className="meta-label">Owner</span>
-                  <select
-                    className="m3-select"
-                    value={owner}
-                    onChange={(e) => setOwner(Number(e.target.value))}
-                  >
-                    <option value="-1">Select owner</option>
-                    {potentialOwners.map((po) => (
-                      <option key={po.id} value={po.id}>
-                        {po.nameWithOrg}
-                      </option>
-                    ))}
-                  </select>
                 </label>
               </div>
             </div>
