@@ -18,10 +18,6 @@ public class RegularUser extends User {
     
     @Column(nullable = false)
     private String surname;
-
-    @ManyToOne
-    @JoinColumn(name = "organisation_id")
-    private Organisation organisation;
         
     @Column(nullable = false)
     private boolean enabled = false;

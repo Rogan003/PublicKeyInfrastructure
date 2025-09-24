@@ -40,6 +40,10 @@ public class OrganisationService {
         );
         return organisationRepository.save(organisation);
     }
+
+    public Organisation getOrganisationByNameAndUnitAndCountry(String name, String unit, String country) {
+        return organisationRepository.findByNameAndUnitAndCountry(name, unit, country);
+    }
 }
 
 

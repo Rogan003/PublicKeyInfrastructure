@@ -66,9 +66,13 @@ public class Certificate {
   @JoinColumn(name = "owner_id")
   private User owner;
 
+  @ManyToOne
+  @JoinColumn(name = "organisation_id")
+  private Organisation organisation;
+
   public Certificate(Subject subject, Issuer issuer, String serialNumber, 
                     Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
-                     Certificate parentCertificate, User owner) {
+                     Certificate parentCertificate, User owner, Organisation organisation) {
       this.subject = subject;
       this.issuer = issuer;
       this.serialNumber = serialNumber;
@@ -78,6 +82,7 @@ public class Certificate {
       this.certificateType = certificateType;
       this.parentCertificate = parentCertificate;
       this.owner = owner;
+      this.organisation = organisation;
       
       // Konverzija sertifikata u byte array za čuvanje u bazi
       try {
