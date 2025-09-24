@@ -24,37 +24,18 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
 
   const availableExtensions = [
-    { value: 'BASIC_CA', label: 'Basic CA Constraints' },
-    { value: 'BASIC_END', label: 'Basic End Entity Constraints' },
     { value: 'KEY_USAGE', label: 'Key Usage' },
     { value: 'EXT_KEY_SERVER', label: 'Extended Key Usage - Server Auth' },
     { value: 'EXT_KEY_CLIENT', label: 'Extended Key Usage - Client Auth' },
     { value: 'SAN', label: 'Subject Alternative Name' }
   ];
 
-  // Define contradictory extensions
-  const contradictoryExtensions = {
-    'BASIC_CA': ['BASIC_END'],
-    'BASIC_END': ['BASIC_CA']
-  };
-
-  // Check if an extension can be selected based on current selections
-  const canSelectExtension = (extensionValue: string): boolean => {
-    const contradictions = contradictoryExtensions[extensionValue as keyof typeof contradictoryExtensions];
-    if (!contradictions) return true;
-    
-    return !contradictions.some(contradictoryExt => selectedExtensions.includes(contradictoryExt));
-  };
-
   // Handle extension selection with validation
   const handleExtensionChange = (extensionValue: string, checked: boolean) => {
     if (checked) {
-      // Check if this extension can be selected
-      if (canSelectExtension(extensionValue)) {
         setSelectedExtensions([...selectedExtensions, extensionValue]);
-      }
     } else {
-      setSelectedExtensions(selectedExtensions.filter(ext => ext !== extensionValue));
+        setSelectedExtensions(selectedExtensions.filter(ext => ext !== extensionValue));
     }
   };
 
@@ -90,10 +71,13 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
     };
 
     if (certificateType === 'RootCA') {
+        setSelectedExtensions(["BASIC_CA", ...selectedExtensions]);
         apiService.createRootCertificate(newCert);
     } else if (certificateType === 'IntermediateCA') {
+        setSelectedExtensions(["BASIC_CA", ...selectedExtensions]);
         apiService.createIntermediateCertificate(newCert);
     } else {
+        setSelectedExtensions(["BASIC_END", ...selectedExtensions]);
         apiService.createEndEntityCertificate(newCert);
     }
 
@@ -283,27 +267,18 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
             <div className="extensions-grid">
               {availableExtensions.map((extension) => {
                 const isSelected = selectedExtensions.includes(extension.value);
-                const canSelect = canSelectExtension(extension.value);
-                const isDisabled = !canSelect && !isSelected;
                 
                 return (
                   <label 
                     key={extension.value} 
-                    className={`checkbox-label ${isDisabled ? 'disabled' : ''}`}
-                    title={isDisabled ? 'Cannot select: conflicts with another selected extension' : ''}
+                    className={`checkbox-label`}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      disabled={isDisabled}
                       onChange={(e) => handleExtensionChange(extension.value, e.target.checked)}
                     />
                     <span className="checkbox-text">{extension.label}</span>
-                    {isDisabled && (
-                      <span className="material-symbols-outlined disabled-icon" title="Conflicts with selected extension">
-                        block
-                      </span>
-                    )}
                   </label>
                 );
               })}
