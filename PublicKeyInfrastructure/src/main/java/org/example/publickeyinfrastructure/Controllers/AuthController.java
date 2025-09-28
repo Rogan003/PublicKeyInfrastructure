@@ -109,27 +109,5 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
     }
-
-    @GetMapping("/potential-owners")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('CERTIFICATE_AUTHORITY')")
-    public ResponseEntity<?> potentialOwners() {
-        try {
-            List<RegularUser> potentialOwners = authService.getPotentialOwners();
-
-            List<UserPotentialOwnerDTO> response = new ArrayList<>();
-
-            for(RegularUser user : potentialOwners) {
-                response.add(new UserPotentialOwnerDTO(
-                        user.getId(),
-                        user.getName() + " " + user.getSurname() + " - " + user.getOrganisation().getName()
-                ));
-            }
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving potential owners: " + e.getMessage());
-        }
-    }
     
 }

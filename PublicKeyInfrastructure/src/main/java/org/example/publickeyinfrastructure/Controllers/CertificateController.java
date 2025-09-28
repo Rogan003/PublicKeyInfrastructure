@@ -1,6 +1,10 @@
 package org.example.publickeyinfrastructure.Controllers;
 
 import jakarta.validation.Valid;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CACertificateInfoDTO;
 import org.example.publickeyinfrastructure.DTOs.Csr.CAInfoDTO;
@@ -61,7 +65,7 @@ public class CertificateController {
             List<CertificateDetailsDTO> responseDTOs = new ArrayList<>();
 
             for (Certificate certificate : certificates) {
-                if (user == null || (user.getRole() == Role.REGULAR_USER && !certificate.getOwner().getId().equals(user.getId()))) {
+                if (user == null || (user.getRole() == Role.REGULAR_USER && !isUsersCertificate(certificate, user))) {
                     continue;
                 } else if (user.getRole() == Role.CERTIFICATE_AUTHORITY && !isUserInCertificateChain(certificate, user)) {
                     continue;
@@ -192,9 +196,26 @@ public class CertificateController {
 
     @PostMapping("/intermediate-ca")
     @PreAuthorize("hasRole('ADMIN') or hasRole('CERTIFICATE_AUTHORITY')")
-    public ResponseEntity<?> createIntermediateCA(@RequestBody @Valid CreateCertificateDTO request,
+    public ResponseEntity<?> createIntermediateCA(@RequestHeader(value = "Authorization", required = true) String token,
+                                                  @RequestBody @Valid CreateCertificateDTO request,
                                                   BindingResult bindingResult) {
         try {
+            User user = null;
+            if(token != null) {
+                token = token.substring(7);
+
+                try {
+                    user = authService.getUserById(jwtUtil.extractUserId(token));
+                }
+                catch (Exception ignored) {
+                }
+            }
+
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("User is not authenticated");
+            }
+
             if (request == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Data for the end entity certificate is required");
@@ -209,7 +230,7 @@ public class CertificateController {
                         .body("There is no issuer certificate!");
             }
 
-            Certificate intermediateCA = certificateService.createIntermediateCA(request);
+            Certificate intermediateCA = certificateService.createIntermediateCA(request, user.getRole() == Role.ADMIN);
             if (intermediateCA != null) {
                 CertificateDTO responseDTO = certificateService.convertToDTO(intermediateCA);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -257,14 +278,34 @@ public class CertificateController {
     }
 
     @GetMapping("/ca-certificates")
-    public ResponseEntity<?> getAllCACertificates() {
+    public ResponseEntity<?> getAllCACertificates(@RequestHeader(value = "Authorization", required = true) String token) {
         try {
+            User user = null;
+            if(token != null) {
+                token = token.substring(7);
+
+                try {
+                    user = authService.getUserById(jwtUtil.extractUserId(token));
+                }
+                catch (Exception ignored) {
+                }
+            }
+
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("User is not authenticated");
+            }
+
             List<Certificate> caCertificates = certificateService.findByCertificateType(CertificateType.ROOT_CA);
             List<Certificate> intermediateCertificates = certificateService.findByCertificateType(CertificateType.INTERMEDIATE_CA);
 
             List<CACertificateInfoDTO> responseDTO = new ArrayList<>();
 
             for (Certificate caCertificate : caCertificates) {
+                if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(caCertificate, user)) {
+                    continue;
+                }
+
                 responseDTO.add(new CACertificateInfoDTO(
                         caCertificate.getId(),
                         caCertificate.getSubject().getX500NameString())
@@ -272,6 +313,10 @@ public class CertificateController {
             }
 
             for (Certificate intermediateCertificate : intermediateCertificates) {
+                if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(intermediateCertificate, user)) {
+                    continue;
+                }
+
                 responseDTO.add(new CACertificateInfoDTO(
                         intermediateCertificate.getId(),
                         intermediateCertificate.getSubject().getX500NameString())
@@ -335,8 +380,32 @@ public class CertificateController {
     private boolean isUserInCertificateChain(Certificate certificate, User user) {
         if (certificate == null) return false;
 
-        return certificate.getOwner().getId().equals(user.getId()) ||
+        return isUsersCertificate(certificate, user) ||
                 isUserInCertificateChain(certificate.getParentCertificate(), user);
+    }
+
+    private boolean isUsersCertificate(Certificate certificate, User user) {
+        if (certificate == null) return false;
+
+        String email = null;
+        X500Name x500Name = certificate.getSubject().getX500Name();
+
+        RDN[] rdns = x500Name.getRDNs(BCStyle.E);
+        if (rdns != null && rdns.length > 0) {
+            email = IETFUtils.valueToString(rdns[0].getFirst().getValue());
+        }
+        else {
+            rdns = x500Name.getRDNs(BCStyle.EmailAddress);
+            if (rdns != null && rdns.length > 0) {
+                email = IETFUtils.valueToString(rdns[0].getFirst().getValue());
+            }
+        }
+
+        return email != null && email.equals(user.getEmail());
+    }
+
+    private boolean isCertifacateInUserOrganisation(Certificate certificate, User user) {
+        return certificate.getOrganisation().getId().equals(user.getOrganisation().getId());
     }
 
    @PostMapping("/{id}/revoke")
@@ -363,18 +432,63 @@ public class CertificateController {
     }
 
     @GetMapping("/ca")
-    public ResponseEntity<?> getAllCAs() {
+    public ResponseEntity<?> getAllCAs(@RequestHeader(value = "Authorization", required = true) String token) {
         try {
+            User user = null;
+            if(token != null) {
+                token = token.substring(7);
+
+                try {
+                    user = authService.getUserById(jwtUtil.extractUserId(token));
+                }
+                catch (Exception ignored) {
+                }
+            }
+
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("User is not authenticated");
+            }
+
             List<Certificate> caCertificates = certificateService.findByCertificateType(CertificateType.ROOT_CA);
             List<Certificate> intermediateCertificates = certificateService.findByCertificateType(CertificateType.INTERMEDIATE_CA);
 
-            List<CAInfoDTO> responseDTO = certificateService.convertToCAInfoDTOList(caCertificates, intermediateCertificates);
+            List<CAInfoDTO> responseDTO = new ArrayList<>();
+
+            for (Certificate cert : caCertificates) {
+                if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(cert, user)) {
+                    continue;
+                }
+
+                responseDTO.add(convertToCAInfoDTO(cert));
+            }
+
+            for (Certificate cert : intermediateCertificates) {
+                if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(cert, user)) {
+                    continue;
+                }
+
+                responseDTO.add(convertToCAInfoDTO(cert));
+            }
             return ResponseEntity.ok(responseDTO);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error retrieving CAs: " + e.getMessage());
         }
+    }
+
+    private CAInfoDTO convertToCAInfoDTO(Certificate certificate) {
+        CAInfoDTO dto = new CAInfoDTO();
+        dto.setId(certificate.getId());
+        dto.setSerialNumber(certificate.getSerialNumber());
+        dto.setCommonName(certificate.getSubject().getCommonName()); // Assuming Subject entity has getCommonName()
+        dto.setSubjectDN(certificate.getSubject().getX500NameString());
+        dto.setIssuerDN(certificate.getIssuer().getX500NameString());
+        dto.setValidFrom(certificate.getStartDate().toString());
+        dto.setValidTo(certificate.getEndDate().toString());
+        dto.setRevoked(certificate.getRevocationReason() != null);
+        return dto;
     }
 
     // Fetch constraints for CA certificates

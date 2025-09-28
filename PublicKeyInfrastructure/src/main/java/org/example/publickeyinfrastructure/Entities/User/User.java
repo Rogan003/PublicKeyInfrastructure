@@ -26,4 +26,8 @@ public abstract class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @ManyToOne
+    @JoinColumn(name = "organisation_id")
+    protected Organisation organisation;
 }

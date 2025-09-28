@@ -5,6 +5,7 @@ import org.example.publickeyinfrastructure.DTOs.Csr.IssueCertificateResponseDTO;
 import org.example.publickeyinfrastructure.DTOs.Csr.IssuerConstraintsDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.IssuerDTO;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
 import org.example.publickeyinfrastructure.Entities.User.RegularUser;
 import org.example.publickeyinfrastructure.Services.Auth.AuthService;
 import org.springframework.stereotype.Service;
@@ -30,14 +31,16 @@ public class CertificateService {
   private IssuerService issuerService;
   private CrlService crlService;
   private AuthService authService;
+  private OrganisationService organisationService;
 
-  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, CrlService crlService, AuthService authService) {
+  public CertificateService(CertificateGeneratorService certificateGeneratorService, CertificateRepository certificateRepository, IssuerService issuerService, SubjectService subjectService, CrlService crlService, AuthService authService, OrganisationService organisationService) {
     this.certificateRepository = certificateRepository;
     this.certificateGeneratorService = certificateGeneratorService;
     this.issuerService = issuerService;
     this.subjectService = subjectService;
     this.crlService = crlService;
     this.authService = authService;
+    this.organisationService = organisationService;
   }
   
   public KeyPair generateKeyPair() {
@@ -73,7 +76,7 @@ public class CertificateService {
               newCertificate.getSubject().getCountry(),
               newCertificate.getSubject().getEmail()
       ), user.getOrganisation());
-      Subject subject = subjectService.createSubject(newCertificate.getSubject());
+      Subject subject = subjectService.createSubject(newCertificate.getSubject(), user.getOrganisation());
 
       String sn = String.valueOf(getAllCertificates().size());
 
@@ -83,17 +86,33 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuer,
               sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.ROOT_CA, null, user);
+              certificate, CertificateType.ROOT_CA, null, user, user.getOrganisation());
       certificateRepository.save(created);
       return created;
   }
 
-  public Certificate createIntermediateCA(CreateCertificateDTO newCertificate) {
+  public Certificate createIntermediateCA(CreateCertificateDTO newCertificate, boolean isAdmin) {
       RegularUser user = authService.getUserById(newCertificate.getOwnerId());
 
-      if (user == null || !Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
+      if (user == null) {
+          return null;
+      }
+
+      Organisation organisation = user.getOrganisation();
+
+      if (!isAdmin && (!Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
               || !Objects.equals(user.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
-              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
+              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit()))) {
+          return null;
+      } else if (isAdmin) {
+          organisation = organisationService.getOrganisationByNameAndUnitAndCountry(
+                  newCertificate.getSubject().getOrganizationName(),
+                  newCertificate.getSubject().getOrganizationUnit(),
+                  newCertificate.getSubject().getCountry()
+          );
+      }
+
+      if (organisation == null) {
           return null;
       }
 
@@ -103,7 +122,7 @@ public class CertificateService {
           return null;
       }
 
-      Subject subject = subjectService.createSubject(newCertificate.getSubject());
+      Subject subject = subjectService.createSubject(newCertificate.getSubject(), organisation);
 
       if (isCertificateValid(issuerCertificate)) {
           return null;
@@ -118,26 +137,30 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate, user);
+              certificate, CertificateType.INTERMEDIATE_CA, issuerCertificate, user, organisation);
       certificateRepository.save(created);
       return created;
   }
 
   public Certificate createEndEntityCertificate(CreateCertificateDTO newCertificate) {
-      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
-
-      if (user == null || !Objects.equals(user.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
-              || !Objects.equals(user.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
-              !Objects.equals(user.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
-          return null;
-      }
-
       Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
       if (issuerCertificate == null) {
           return null;
       }
 
-      Subject subject = subjectService.createSubject(newCertificate.getSubject());
+      if (!Objects.equals(issuerCertificate.getOrganisation().getName(), newCertificate.getSubject().getOrganizationName())
+              || !Objects.equals(issuerCertificate.getOrganisation().getCountry(), newCertificate.getSubject().getCountry()) ||
+              !Objects.equals(issuerCertificate.getOrganisation().getUnit(), newCertificate.getSubject().getOrganizationUnit())) {
+          return null;
+      }
+
+      RegularUser user = authService.getUserById(newCertificate.getOwnerId());
+
+      if (user == null) {
+          return null;
+      }
+
+      Subject subject = subjectService.createSubject(newCertificate.getSubject(), issuerCertificate.getOrganisation());
 
       if (isCertificateValid(issuerCertificate)) {
           return null;
@@ -151,7 +174,8 @@ public class CertificateService {
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(),
-              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate, user);
+              newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate,
+              user, issuerCertificate.getOrganisation());
 
       certificateRepository.save(created);
       return created;
@@ -261,33 +285,6 @@ public class CertificateService {
 
   public boolean isCertificateRevoked(Certificate certificate) {
     return certificate.getRevocationReason() != null && certificate.getRevocationDate() != null;
-  }
-
-  public List<CAInfoDTO> convertToCAInfoDTOList(List<Certificate> rootCAs, List<Certificate> intermediateCAs) {
-    List<CAInfoDTO> caInfoList = new ArrayList<>();
-
-    for (Certificate cert : rootCAs) {
-        caInfoList.add(convertToCAInfoDTO(cert));
-    }
-
-    for (Certificate cert : intermediateCAs) {
-        caInfoList.add(convertToCAInfoDTO(cert));
-    }
-
-    return caInfoList;
-  }
-
-  private CAInfoDTO convertToCAInfoDTO(Certificate certificate) {
-    CAInfoDTO dto = new CAInfoDTO();
-    dto.setId(certificate.getId());
-    dto.setSerialNumber(certificate.getSerialNumber());
-    dto.setCommonName(certificate.getSubject().getCommonName()); // Assuming Subject entity has getCommonName()
-    dto.setSubjectDN(certificate.getSubject().getX500NameString());
-    dto.setIssuerDN(certificate.getIssuer().getX500NameString());
-    dto.setValidFrom(certificate.getStartDate().toString());
-    dto.setValidTo(certificate.getEndDate().toString());
-    dto.setRevoked(certificate.getRevocationReason() != null);
-    return dto;
   }
 
     public Optional<Certificate> findById(Long id) {

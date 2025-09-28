@@ -1,6 +1,7 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
 import org.example.publickeyinfrastructure.Repositories.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,7 @@ public class SubjectService {
   @Autowired
   private SubjectRepository subjectRepository;
 
-  public Subject createSubject(SubjectDTO subjectDTO) {
+  public Subject createSubject(SubjectDTO subjectDTO, Organisation organisation) {
     try {
       KeyPair keyPair = generateKeyPair();
       X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
@@ -53,7 +54,7 @@ public class SubjectService {
         builder.addRDN(BCStyle.E, subjectDTO.getEmail());
       }
 
-      Subject subject = new Subject(keyPair.getPublic(), builder.build());
+      Subject subject = new Subject(keyPair.getPrivate(), keyPair.getPublic(), builder.build(), organisation);
       return subjectRepository.save(subject);
     } catch (Exception e) {
       e.printStackTrace();

@@ -98,7 +98,7 @@ public class CertificateGeneratorService {
                                 Extension.subjectAlternativeName,
                                 false,
                                 new GeneralNames(
-                                        new GeneralName(GeneralName.dNSName, "example.com")
+                                        new GeneralName(subject.getX500Name())
                                 )
                         );
                         break;

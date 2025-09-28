@@ -17,7 +17,7 @@ VALUES
      '$argon2id$v=19$m=16384,t=2,p=1$flQ3UN7LUmIBSuP1YoZ90Q$Eu/1z+4lLmh4+oVq+VC8MkMLafbuF5Ql/ZGuL3SSGaI',
      'ADMIN',
      'RegularUser',
-     'Admin', 'Admin', NULL, true, NOW()),
+     'Admin', 'Admin', 1, true, NOW()),
 
     -- Certificate Authority 1
     -- password = ca1pass

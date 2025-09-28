@@ -118,26 +118,32 @@ const Dashboard: React.FC = () => {
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Certificate
           </button>
-          <button disabled={user.role !== 'REGULAR_USER'} className="button-tonal" onClick={() => setCsrOpen(true)}>
-            <span className="material-symbols-outlined" aria-hidden>file_upload</span>
-            Request EE Certificate (CSR)
-          </button>
-
-          <button disabled={user.role !== 'ADMIN'} className="button-tonal" onClick={handleAddUser}>    
-            <span className="material-symbols-outlined" aria-hidden>person_add</span>
-            Add CA User
-          </button>
+            {
+                user.role === 'REGULAR_USER' &&
+                <button className="button-tonal" onClick={() => setCsrOpen(true)}>
+                    <span className="material-symbols-outlined" aria-hidden>file_upload</span>
+                    Request EE Certificate (CSR)
+                </button>
+            }
+            {
+                user.role === 'ADMIN' &&
+                <button className="button-tonal" onClick={handleAddUser}>
+                    <span className="material-symbols-outlined" aria-hidden>person_add</span>
+                    Add CA User
+                </button>
+            }
 
           {/* <button className="button-tonal" onClick={handleCreateKeyPair}>
             <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
             Create Key Pair
           </button> */}
-
-           <button disabled={user.role !== 'ADMIN'} className="button-tonal" onClick={handleCreateOrganisation}>
-            <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
-            Create Organisation
-          </button>
-
+            {
+                user.role === 'ADMIN' &&
+                <button className="button-tonal" onClick={handleCreateOrganisation}>
+                    <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
+                    Create Organisation
+                </button>
+            }
         </div>
 
           <div className="dashboard-card">

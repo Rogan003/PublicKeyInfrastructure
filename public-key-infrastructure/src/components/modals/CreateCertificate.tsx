@@ -1,12 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import type {CACertificateInfo, CreateCertificate, Subject, UserPotentialOwner} from '../../types/certificates';
+import type {CACertificateInfo, CreateCertificate, Subject} from '../../types/certificates';
 import {apiService} from "../../services/api.ts";
+import {useAuth} from "../../contexts/AuthContext.tsx";
 
 interface CreateCertificateModalProps {
   onClose: () => void;
 }
 
 const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose }) => {
+    const { user } = useAuth();
   const [commonName, setCommonName] = useState('');
   const [givenName, setGivenName] = useState('');
   const [surname, setSurname] = useState('');
@@ -14,53 +16,36 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
   const [organizationUnit, setOrganizationUnit] = useState('');
   const [country, setCountry] = useState('');
   const [email, setEmail] = useState('');
-  const [owner, setOwner] = useState<number>(-1);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [certificateType, setCertificateType] = useState('RootCA');
   const [issuerCA, setIssuerCA] = useState<number>(-1);
-  const [potentialOwners, setPotentialOwners] = useState<UserPotentialOwner[]>([]);
   const [caCertificates, setCACertificates] = useState<CACertificateInfo[]>([]);
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
 
   const availableExtensions = [
-    { value: 'BASIC_CA', label: 'Basic CA Constraints' },
-    { value: 'BASIC_END', label: 'Basic End Entity Constraints' },
-    { value: 'KEY_USAGE', label: 'Key Usage' },
+    { value: 'KEY_USAGE', label: 'Key Usage - digitalSignature | keyEncipherment' },
     { value: 'EXT_KEY_SERVER', label: 'Extended Key Usage - Server Auth' },
     { value: 'EXT_KEY_CLIENT', label: 'Extended Key Usage - Client Auth' },
     { value: 'SAN', label: 'Subject Alternative Name' }
   ];
 
-  // Define contradictory extensions
-  const contradictoryExtensions = {
-    'BASIC_CA': ['BASIC_END'],
-    'BASIC_END': ['BASIC_CA']
-  };
-
-  // Check if an extension can be selected based on current selections
-  const canSelectExtension = (extensionValue: string): boolean => {
-    const contradictions = contradictoryExtensions[extensionValue as keyof typeof contradictoryExtensions];
-    if (!contradictions) return true;
-    
-    return !contradictions.some(contradictoryExt => selectedExtensions.includes(contradictoryExt));
-  };
-
   // Handle extension selection with validation
   const handleExtensionChange = (extensionValue: string, checked: boolean) => {
     if (checked) {
-      // Check if this extension can be selected
-      if (canSelectExtension(extensionValue)) {
         setSelectedExtensions([...selectedExtensions, extensionValue]);
-      }
     } else {
-      setSelectedExtensions(selectedExtensions.filter(ext => ext !== extensionValue));
+        setSelectedExtensions(selectedExtensions.filter(ext => ext !== extensionValue));
     }
   };
 
   useEffect(() => {
-      apiService.getPotentialOwners().then(setPotentialOwners)
       apiService.getAllCACertificates().then(setCACertificates)
+      if (user?.role === "CERTIFICATE_AUTHORITY") {
+          setCertificateType("IntermediateCA");
+      } else {
+          setCertificateType("EndEntity");
+      }
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -80,20 +65,25 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
 
     const issuerCertificateId = issuerCA === -1 ? undefined : issuerCA
 
+
     const newCert: CreateCertificate = {
         issuerCertificateId,
         subject,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         extensions: selectedExtensions,
-        ownerId: owner
+        ownerId: user?.id ?? -1
     };
 
     if (certificateType === 'RootCA') {
+        newCert.extensions.push("BASIC_CA");
+        setSelectedExtensions([...selectedExtensions, "BASIC_CA"]);
         apiService.createRootCertificate(newCert);
     } else if (certificateType === 'IntermediateCA') {
+        newCert.extensions.push("BASIC_CA");
         apiService.createIntermediateCertificate(newCert);
     } else {
+        newCert.extensions.push("BASIC_END");
         apiService.createEndEntityCertificate(newCert);
     }
 
@@ -188,21 +178,6 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                     placeholder="Enter country"
                   />
                 </label>
-                <label>
-                  <span className="meta-label">Owner</span>
-                  <select
-                    className="m3-select"
-                    value={owner}
-                    onChange={(e) => setOwner(Number(e.target.value))}
-                  >
-                    <option value="-1">Select owner</option>
-                    {potentialOwners.map((po) => (
-                      <option key={po.id} value={po.id}>
-                        {po.nameWithOrg}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </div>
             </div>
           </div>
@@ -227,8 +202,14 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                       }
                     }}
                   >
-                    <option value="RootCA">Root CA</option>
-                    <option value="IntermediateCA">Intermediate CA</option>
+                      {
+                          user?.role === "ADMIN" &&
+                          <option value="RootCA">Root CA</option>
+                      }
+                      {
+                          user?.role === "ADMIN" || user?.role === "CERTIFICATE_AUTHORITY" &&
+                          <option value="IntermediateCA">Intermediate CA</option>
+                      }
                     <option value="EndEntity">End Entity</option>
                   </select>
                 </label>
@@ -283,27 +264,18 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
             <div className="extensions-grid">
               {availableExtensions.map((extension) => {
                 const isSelected = selectedExtensions.includes(extension.value);
-                const canSelect = canSelectExtension(extension.value);
-                const isDisabled = !canSelect && !isSelected;
                 
                 return (
                   <label 
                     key={extension.value} 
-                    className={`checkbox-label ${isDisabled ? 'disabled' : ''}`}
-                    title={isDisabled ? 'Cannot select: conflicts with another selected extension' : ''}
+                    className={`checkbox-label`}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      disabled={isDisabled}
                       onChange={(e) => handleExtensionChange(extension.value, e.target.checked)}
                     />
                     <span className="checkbox-text">{extension.label}</span>
-                    {isDisabled && (
-                      <span className="material-symbols-outlined disabled-icon" title="Conflicts with selected extension">
-                        block
-                      </span>
-                    )}
                   </label>
                 );
               })}
