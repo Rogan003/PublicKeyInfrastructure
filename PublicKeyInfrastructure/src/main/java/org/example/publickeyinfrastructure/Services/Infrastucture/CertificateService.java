@@ -82,7 +82,7 @@ public class CertificateService {
 
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuer, newCertificate.getStartDate(), newCertificate.getEndDate(),
-              sn, newCertificate.getExtensions());
+              sn, newCertificate.getExtensions(), null);
 
       Certificate created = new Certificate(subject, issuer,
               sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
@@ -133,7 +133,7 @@ public class CertificateService {
       // Intermediate CA signs Root CA
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), sn, newCertificate.getExtensions());
+              newCertificate.getEndDate(), sn, newCertificate.getExtensions(), issuerCertificate.getId());
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(), newCertificate.getEndDate(),
@@ -170,7 +170,7 @@ public class CertificateService {
 
       X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
               issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-              newCertificate.getEndDate(), sn, newCertificate.getExtensions());
+              newCertificate.getEndDate(), sn, newCertificate.getExtensions(), issuerCertificate.getId());
 
       Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
               sn, newCertificate.getStartDate(),
@@ -209,7 +209,7 @@ public class CertificateService {
 
     X509Certificate certificate = certificateGeneratorService.generateCertificate(subject,
             issuerCertificate.getIssuer(), newCertificate.getStartDate(),
-            newCertificate.getEndDate(), sn, newCertificate.getExtensions());
+            newCertificate.getEndDate(), sn, newCertificate.getExtensions(),  issuerCertificate.getId());
 
     Certificate created = new Certificate(subject, issuerCertificate.getIssuer(),
             sn, newCertificate.getStartDate(),

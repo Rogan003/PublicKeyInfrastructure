@@ -24,6 +24,15 @@ public class CertificateGeneratorService {
   private static final String ALGORITHM = "SHA256WithRSAEncryption";
   private static final String PROVIDER = "BC";
 
+  /* EXAMPLE:
+  1. User visits your frontend (localhost:3000)
+  2. Frontend makes API call to backend (localhost:8080)
+  3. Backend returns a certificate with CRL URL: "http://localhost:8080/api/crl/ca/1"
+  4. When validating the certificate, the client software (browser/OpenSSL/etc.)
+     directly calls: http://localhost:8080/api/crl/ca/1
+  5. Backend returns the CRL (list of revoked certificates) */
+  private static final String CRL_DISTRIBUTION_BASE_URL = "https://localhost:8443/api/crl/ca/";   // backend API endpoint - check there if a certificate is revoked
+
   public CertificateGeneratorService() {
     Security.addProvider(new BouncyCastleProvider());
   }
@@ -34,7 +43,8 @@ public class CertificateGeneratorService {
             Date startDate,
             Date endDate,
             String serialNumber,
-            List<String> extensions
+            List<String> extensions,
+            Long issuerCertificateId
     ) {
         try {
             JcaContentSignerBuilder builder = new JcaContentSignerBuilder(ALGORITHM).setProvider(PROVIDER);
@@ -48,6 +58,9 @@ public class CertificateGeneratorService {
                     subject.getX500Name(),
                     subject.getPublicKey()
             );
+
+            // Add CRL Distribution Point for all certificates
+            addCRLDistributionPoint(certGen, issuerCertificateId);
 
             for (String ext : extensions) {
                 System.out.println("Extension: ");
@@ -119,5 +132,40 @@ public class CertificateGeneratorService {
             return null;
         }
     }
-  
+
+    /*
+    What is "actual issuer certificate ID"?
+    When a CA (Certificate Authority) issues a certificate, the issued certificate needs to include a CRL Distribution Point - a URL where clients can download the list of revoked certificates for that specific CA.
+    For example:
+    Root CA (ID=1) issues Intermediate CA (ID=2)
+    Intermediate CA's CRL URL: http://localhost:8080/api/crl/ca/1 (points to Root CA's CRL)
+    Intermediate CA (ID=2) issues End Entity certificate (ID=3)
+    End Entity's CRL URL: http://localhost:8080/api/crl/ca/2 (points to Intermediate CA's CRL)
+    Now when you revoke a certificate, clients can check the CRL at that URL to see if it's been revoked!
+    */
+    // add CRL Distribution Point extension
+    // issuerCertificateId = ID of the CA certificate (used to construct CRL URL)
+    private void addCRLDistributionPoint(X509v3CertificateBuilder certGen, Long issuerCertificateId) {
+        try {
+            String crlUrl = CRL_DISTRIBUTION_BASE_URL + issuerCertificateId;
+
+            GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlUrl);
+            GeneralNames generalNames = new GeneralNames(generalName);
+            DistributionPointName distributionPointName = new DistributionPointName(generalNames);
+            DistributionPoint distributionPoint = new DistributionPoint(
+                    distributionPointName,
+                    null,
+                    null
+            );
+
+            certGen.addExtension(
+                    Extension.cRLDistributionPoints,
+                    false,
+                    new CRLDistPoint(new DistributionPoint[]{distributionPoint})
+            );
+
+        } catch (Exception e) {
+            System.err.println("Failed to add CRL Distribution Point: " + e.getMessage());
+        }
+    }
 }

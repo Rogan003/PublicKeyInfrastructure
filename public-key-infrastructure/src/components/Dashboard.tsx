@@ -13,6 +13,7 @@ import CSRRequestModal from './modals/CSRRequest';
 import type {IssueCertificateResponse} from "../types/csr.ts";
 import RevocationReason from "./modals/RevocationReason.tsx";
 import {apiService} from "../services/api.ts";
+import CRLViewer from "./modals/CRLViewer.tsx";
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,6 +25,7 @@ const Dashboard: React.FC = () => {
   const [organisationCreationOpen, setOrganisationCreationOpen] = useState(false);
   const [csrOpen, setCsrOpen] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState<Certificate | null>(null);
+  const [crlOpen, setCrlOpen] = useState(false);
 
   const handleRevokeCertificate = (cert: Certificate) => {
     setRevokeOpen(cert); // Open revocation modal for this certificate
@@ -183,6 +185,10 @@ const Dashboard: React.FC = () => {
                     Create Organisation
                 </button>
             }
+            <button className="button-tonal" onClick={() => setCrlOpen(true)}>
+                <span className="material-symbols-outlined" aria-hidden>list_alt</span>
+                View CRL
+            </button>
         </div>
 
           <div className="dashboard-card">
@@ -312,6 +318,10 @@ const Dashboard: React.FC = () => {
 
         />
       )}
+      {crlOpen && (
+         <CRLViewer onClose={() => setCrlOpen(false)} />
+      )}
+
     </div>
   );
 };

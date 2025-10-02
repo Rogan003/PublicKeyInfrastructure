@@ -180,7 +180,17 @@ class ApiService {
     await this.api.post(`/certificates/${certificateId}/revoke`, payload);
   }
 
-  async getUserInfo(): Promise<UserInfo> {
+    async getCRLForCA(caId: number): Promise<string> {
+        const res = await this.api.get(`/crl/ca/${caId}`, {
+            responseType: 'text',
+            headers: {
+                'Accept': 'text/plain'
+            }
+        });
+        return res.data;
+    }
+
+    async getUserInfo(): Promise<UserInfo> {
     const response: AxiosResponse<UserInfo> = await this.api.get(`/auth/user-info`);
     return response.data;
   }
