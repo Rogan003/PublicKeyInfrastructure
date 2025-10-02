@@ -10,6 +10,7 @@ export interface CAInfo {
     validFrom: string;
     validTo: string;
     isRevoked: boolean;
+    keystoreFormat: string;
 }
 
 // CA's rules

@@ -1,7 +1,8 @@
 package org.example.publickeyinfrastructure.Controllers;
 
 import org.example.publickeyinfrastructure.DTOs.Auth.*;
-import org.example.publickeyinfrastructure.Entities.User.RegularUser;
+import org.example.publickeyinfrastructure.Entities.User.User;
+import org.example.publickeyinfrastructure.Utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,10 @@ import org.example.publickeyinfrastructure.Entities.EmailVerification.EmailVerif
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
-    
     @Autowired
     private AuthService authService;
+    @Autowired
+    private JwtUtil jwtUtil;
     @Autowired
     private EmailVerificationService emailVerificationService;
     
@@ -109,5 +111,34 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
     }
-    
+
+    @GetMapping("/user-info")
+    public ResponseEntity<UserInfoDTO> getUserInfo(@RequestHeader(value = "Authorization", required = true) String token) {
+        try {
+            User user = null;
+            if (token != null) {
+                token = token.substring(7);
+
+                try {
+                    user = authService.getUserById(jwtUtil.extractUserId(token));
+                } catch (Exception ignored) {}
+            }
+
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            UserInfoDTO userInfo = new  UserInfoDTO();
+            userInfo.setId(user.getId());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setOrganization(user.getOrganisation().getName());
+            userInfo.setUnit(user.getOrganisation().getUnit());
+            userInfo.setCountry(user.getOrganisation().getCountry());
+
+            return ResponseEntity.ok().body(userInfo);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 }

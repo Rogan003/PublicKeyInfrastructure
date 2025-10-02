@@ -62,6 +62,10 @@ public class SubjectService {
     }
   }
 
+  public Optional<Subject> saveSubject(Subject subject) {
+      return Optional.of(subjectRepository.save(subject));
+  }
+
   public Optional<Subject> getSubjectById(Long id) {
     return subjectRepository.findById(id);
   }

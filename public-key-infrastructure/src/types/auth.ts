@@ -54,3 +54,11 @@ export interface Organisation {
   unit: string;
   country: string;
 }
+
+export interface UserInfo {
+    id: number;
+    email: string;
+    organization: string;
+    unit: string;
+    country: string;
+}

@@ -1,4 +1,4 @@
--- pass for everyone is: (CspCsp567)
+    -- pass for everyone is: (CspCsp567)
 -- First insert organizations to get their IDs
 INSERT INTO organisations (name, unit, country, private_key)
 VALUES

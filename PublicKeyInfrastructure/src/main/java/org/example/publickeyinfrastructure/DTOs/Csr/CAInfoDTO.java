@@ -14,4 +14,5 @@ public class CAInfoDTO {
     private String validFrom;
     private String validTo;
     private boolean isRevoked;
+    private String keystoreFormat;
 }

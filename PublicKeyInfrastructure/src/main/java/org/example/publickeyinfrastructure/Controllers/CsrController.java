@@ -1,5 +1,6 @@
 package org.example.publickeyinfrastructure.Controllers;
 
+import javafx.util.Pair;
 import org.example.publickeyinfrastructure.DTOs.Csr.*;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.CreateCertificateDTO;
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
@@ -9,11 +10,15 @@ import org.example.publickeyinfrastructure.Services.Infrastucture.CertificateSer
 import org.example.publickeyinfrastructure.Services.Infrastucture.CsrService;
 import org.example.publickeyinfrastructure.Services.Infrastucture.SubjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,30 +43,25 @@ public class CsrController {
     @PostMapping("/upload")
     public ResponseEntity<?> uploadCsr(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("CSR file cannot be empty");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("CSR file cannot be empty");
         }
 
         try {
             String content = new String(file.getBytes());
-            System.out.println("File content: \n" + content);
 
             CsrDTO csrDetails = csrService.processCsr(content);
             return ResponseEntity.ok(csrDetails);
 
         } catch (IOException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error reading CSR file: " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error reading CSR file: " + ex.getMessage());
 
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Invalid CSR file: " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid CSR file: " + ex.getMessage());
         }
     }
 
     @PostMapping("/parse")
-    public ResponseEntity<?> parseCsr(@RequestBody CsrRequest request
-    ) {
+    public ResponseEntity<?> parseCsr(@RequestBody CsrRequest request) {
         try {
             String csrPem = request.getCsrPem();
 
@@ -147,8 +147,7 @@ public class CsrController {
             return ResponseEntity.badRequest().body(e.getMessage());
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error processing CSR: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing CSR: " + e.getMessage());
         }
     }
 
@@ -190,7 +189,6 @@ public class CsrController {
                 return ResponseEntity.badRequest().body("Invalid validity period: NotBefore must be before NotAfter.");
             }
 
-            // The rest of the logic remains the same...
             Optional<Certificate> optionalIssuerCertificate = certificateService.findById(Long.valueOf(issuerCAId));
             if (optionalIssuerCertificate.isEmpty()) {
                 return ResponseEntity.badRequest().body("CA certificate with the provided ID does not exist.");
@@ -201,15 +199,13 @@ public class CsrController {
                 return ResponseEntity.badRequest().body("The selected CA certificate is revoked.");
             }
             if (validityStart.before(issuerCertificate.getStartDate()) || validityEnd.after(issuerCertificate.getEndDate())) {
-                return ResponseEntity.badRequest()
-                        .body("The requested validity period exceeds the limits of the selected CA certificate.");
+                return ResponseEntity.badRequest().body("The requested validity period exceeds the limits of the selected CA certificate.");
             }
 
-            KeyPair keyPair = certificateService.generateKeyPair();
             List<String> extensions = List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER");
             Long ownerId = authService.getCurrentUserId();
 
-            Certificate issuedCertificate = certificateService.createEndEntityCertificate(
+            Pair<Certificate, KeyPair> cr = certificateService.createEndEntityCertificateCSR(
                 new CreateCertificateDTO(
                     issuerCertificate.getId(),
                     subjectDTO,
@@ -217,47 +213,114 @@ public class CsrController {
                     validityEnd,
                     extensions,
                     ownerId
-                )
+                ), keystoreFormat
             );
 
-            if (issuedCertificate == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Failed to create the certificate. Please check inputs and try again.");
+            if (cr.getKey() == null || cr.getValue() == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create the certificate. Please check inputs and try again.");
             }
+            Certificate issuedCertificate = cr.getKey();
+            KeyPair keyPair = cr.getValue();
 
             byte[] keystoreData;
             try {
                 keystoreData = certificateService.generateKeystore(keyPair, issuedCertificate, keystoreFormat, keystorePassword);
+                saveKeystore(keystoreData, issuedCertificate.getId(), keystoreFormat);
+                IssueCertificateResponseDTO response = certificateService.convertToCertificateResponseDTO(issuedCertificate);
+                return ResponseEntity.ok(response);
+
             } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Failed to generate keystore: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate keystore: " + e.getMessage());
             }
-
-            String keystoreUrl = saveKeystoreAndGenerateUrl(keystoreData, issuedCertificate.getId());
-
-            IssueCertificateResponseDTO response = certificateService.convertToCertificateResponseDTO(issuedCertificate);
-            return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Autogenerated certificate issuance failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Autogenerated certificate issuance failed: " + e.getMessage());
         }
     }
 
-    private String saveKeystoreAndGenerateUrl(byte[] keystoreData, Long certificateId) throws IOException {
-        Path directoryPath = Paths.get("src/main/resources/keystores");
-        if (!Files.exists(directoryPath)) {
-            Files.createDirectories(directoryPath);
+    private void saveKeystore(byte[] keystoreData, Long certificateId, String keystoreFormat) throws IOException {
+        try {
+            Path directoryPath = Paths.get("private_keys");
+            if (!Files.exists(directoryPath)) {
+                Files.createDirectories(directoryPath);
+            }
+
+            // Use appropriate extension based on format
+            String extension = keystoreFormat.equalsIgnoreCase("JKS") ? ".jks" : ".p12";
+            String filename = "keystore_" + certificateId + extension;
+            Path filePath = directoryPath.resolve(filename);
+
+            Files.write(filePath, keystoreData);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        String filename = "keystore_" + certificateId + ".p12"; // defaulting PKCS12 extension
-        Path filePath = directoryPath.resolve(filename);
+    @GetMapping("/{certificateId}/download")
+    public ResponseEntity<?> downloadCertificate(@PathVariable Long certificateId) {
+        try {
+            Certificate certificate = certificateService.findById(certificateId).orElseThrow(() -> new RuntimeException("Certificate not found"));
 
-        Files.write(filePath, keystoreData);
+            String pemContent = certificateService.toPem(certificate);
+            ByteArrayResource resource = new ByteArrayResource(
+                    pemContent.getBytes(StandardCharsets.UTF_8)
+            );
 
-        return filePath.toString();
+            String fileName = "certificate_" + certificateId + ".pem";
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.parseMediaType("application/x-pem-file"))
+                    .contentLength(resource.contentLength())
+                    .body(resource);
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Download private key as keystore (.p12 or .jks)
+    @GetMapping("/{certificateId}/download-keystore")
+    public ResponseEntity<?> downloadKeystore(@PathVariable Long certificateId) {
+        try {
+            Path keystoreDirectory = Paths.get("private_keys");
+
+            Path filePath = null;
+            String fileName = null;
+
+            // check for PKCS12 format
+            Path p12Path = keystoreDirectory.resolve("keystore_" + certificateId + ".p12");
+            if (Files.exists(p12Path)) {
+                filePath = p12Path;
+                fileName = "keystore_" + certificateId + ".p12";
+
+            } else {
+            // check for JKS format
+                Path jksPath = keystoreDirectory.resolve("keystore_" + certificateId + ".jks");
+                if (Files.exists(jksPath)) {
+                    filePath = jksPath;
+                    fileName = "keystore_" + certificateId + ".jks";
+                }
+            }
+
+            if (filePath == null || !Files.exists(filePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(filePath));
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentLength(resource.contentLength())
+                    .body(resource);
+
+        } catch (IOException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
