@@ -125,11 +125,6 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleDelete = (cert: Certificate) => {
-    setCertificates(prev => prev.filter(c => c.id !== cert.id));
-    toast.success('Certificate deleted');
-  };
-
   useEffect(() => {
       apiService.getAllCertificates().then(setCertificates)
   }, [detailsOpen, createOpen, userCreationOpen, organisationCreationOpen]);

@@ -144,7 +144,7 @@ public class CertificateService {
 
   public Certificate createEndEntityCertificate(CreateCertificateDTO newCertificate) {
       Certificate issuerCertificate = getCertificateById(newCertificate.getIssuerCertificateId());
-      if (issuerCertificate == null) {
+      if (issuerCertificate == null || issuerCertificate.getRevocationReason() != null) {
           return null;
       }
 
@@ -329,27 +329,39 @@ public class CertificateService {
       }
   }
 
-  public boolean revokeCertificate(Long id, String reason) {
+  public int revokeCertificate(Long id, String reason) {
     Optional<Certificate> optionalCertificate = certificateRepository.findById(id);
 
-    if (!optionalCertificate.isPresent()) {
-        return false;
-    }
+      if (!optionalCertificate.isPresent()) {
+          return 0;
+      }
 
     Certificate certificate = optionalCertificate.get();
 
     // check if certificate is already revoked
     if (certificate.getRevocationReason() != null) {
-        return false;
+        return 0;
     }
 
     certificate.setRevocationReason(reason);
     certificate.setRevocationDate(new Date());
     certificateRepository.save(certificate);
-
     crlService.addCertificateToCRL(certificate);
-    return true;
+
+      int count = 1;
+
+      // Find and revoke all children recursively
+      List<Certificate> children = findChildCertificates(id);
+      for (Certificate child : children) {
+          count += revokeCertificate(child.getId(), reason);
+      }
+
+      return count;
   }
+
+    private List<Certificate> findChildCertificates(Long parentId) {
+        return certificateRepository.findByParentCertificate_Id(parentId);
+    }
 
   public boolean isCertificateRevoked(Certificate certificate) {
     return certificate.getRevocationReason() != null && certificate.getRevocationDate() != null;

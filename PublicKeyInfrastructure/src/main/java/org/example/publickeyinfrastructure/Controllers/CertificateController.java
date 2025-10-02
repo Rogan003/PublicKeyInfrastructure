@@ -65,11 +65,16 @@ public class CertificateController {
             List<CertificateDetailsDTO> responseDTOs = new ArrayList<>();
 
             for (Certificate certificate : certificates) {
+                if (certificate.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user == null || (user.getRole() == Role.REGULAR_USER && !isUsersCertificate(certificate, user))) {
                     continue;
                 } else if (user.getRole() == Role.CERTIFICATE_AUTHORITY && !isUserInCertificateChain(certificate, user)) {
                     continue;
                 }
+
                 List<String> keyUsageStrings = getKeyUsageStrings(certificate.getX509Certificate());
                 List<String> extendedKeyUsageStrings = getExtendedKeyUsageStrings(certificate.getX509Certificate());
 
@@ -303,6 +308,10 @@ public class CertificateController {
             List<CACertificateInfoDTO> responseDTO = new ArrayList<>();
 
             for (Certificate caCertificate : caCertificates) {
+                if (caCertificate.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(caCertificate, user)) {
                     continue;
                 }
@@ -314,6 +323,10 @@ public class CertificateController {
             }
 
             for (Certificate intermediateCertificate : intermediateCertificates) {
+                if (intermediateCertificate.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(intermediateCertificate, user)) {
                     continue;
                 }
@@ -418,11 +431,13 @@ public class CertificateController {
                 return ResponseEntity.badRequest().body("Revocation reason is required");
             }
 
-            boolean revoked = certificateService.revokeCertificate(id, reason);
-            if (!revoked) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Certificate could not be revoked. It may not exist or is already revoked.");
+            int revokedCount = certificateService.revokeCertificate(id, reason);
+            if (revokedCount == 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Certificate could not be revoked. It may not exist or is already revoked.");
             }
-            return ResponseEntity.ok("Certificate revoked successfully");
+
+            return ResponseEntity.ok("Certificate and " + (revokedCount - 1) + " descendant(s) revoked successfully. Total: " + revokedCount);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error revoking certificate: " + e.getMessage());
@@ -454,6 +469,10 @@ public class CertificateController {
             List<CAInfoDTO> responseDTO = new ArrayList<>();
 
             for (Certificate cert : caCertificates) {
+                if (cert.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(cert, user)) {
                     continue;
                 }
