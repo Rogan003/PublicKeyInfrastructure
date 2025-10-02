@@ -2,6 +2,7 @@ package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Issuer;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
 import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
@@ -30,7 +31,7 @@ public class SubjectService {
     @Autowired
   private SubjectRepository subjectRepository;
 
-  public Subject createSubject(SubjectDTO subjectDTO, Organisation organisation) {
+  public Subject createSubject(SubjectDTO subjectDTO, Organisation organisation, Issuer issuer) {
     try {
       KeyPair keyPair = generateKeyPair();
       X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
@@ -57,7 +58,15 @@ public class SubjectService {
         builder.addRDN(BCStyle.E, subjectDTO.getEmail());
       }
 
-      Subject subject = new Subject(keyPair.getPrivate(), keyPair.getPublic(), builder.build(), organisation);
+      Subject subject;
+
+      if (issuer != null) {
+          subject = new Subject(issuer.getPrivateKey(), issuer.getPublicKey(), builder.build(), organisation, issuer);
+      }
+      else {
+          subject = new Subject(keyPair.getPrivate(), keyPair.getPublic(), builder.build(), organisation, null);
+      }
+
       return subjectRepository.save(subject);
     } catch (Exception e) {
       e.printStackTrace();

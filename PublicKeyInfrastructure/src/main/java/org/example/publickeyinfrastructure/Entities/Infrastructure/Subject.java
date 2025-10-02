@@ -46,12 +46,17 @@ public class Subject {
     @JoinColumn(name = "organisation_id")
     private Organisation organisation;
 
-    public Subject(PrivateKey privateKey, PublicKey publicKey, X500Name x500Name, Organisation organisation) {
+    @OneToOne
+    @JoinColumn(name = "issuer_version_id")
+    private Issuer issuerVersion;
+
+    public Subject(PrivateKey privateKey, PublicKey publicKey, X500Name x500Name, Organisation organisation, Issuer issuer) {
         this.privateKey = privateKey;
         this.publicKey = publicKey;
         this.x500Name = x500Name;
         this.x500NameString = x500Name.toString();
         this.organisation = organisation;
+        this.issuerVersion = issuer;
         
         // Konverzija ključa u byte array za čuvanje u bazi
         try {

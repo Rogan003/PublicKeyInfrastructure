@@ -23,7 +23,7 @@ public class SubjectController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('CERTIFICATE_AUTHORITY')")
     public ResponseEntity<?> createSubject(@RequestBody SubjectDTO subjectDTO) {
         try {
-            Subject createdSubject = subjectService.createSubject(subjectDTO, null);
+            Subject createdSubject = subjectService.createSubject(subjectDTO, null, null);
             if (createdSubject != null) {
                 SubjectDTO responseDTO = subjectService.convertToDTO(createdSubject);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
