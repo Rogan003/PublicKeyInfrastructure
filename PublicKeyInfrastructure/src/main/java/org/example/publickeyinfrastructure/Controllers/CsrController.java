@@ -124,8 +124,18 @@ public class CsrController {
             subjectDTO.setEmail(csrDetails.getEmail());
             String organizationUnit = csrDetails.getOrganizationUnit();
             subjectDTO.setOrganizationUnit((organizationUnit != null && !organizationUnit.isBlank()) ? organizationUnit : "Default Unit");
-            // mocked extensions for now
-            List<String> extensions = List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER");
+
+            // Use extensions extracted from CSR (includes BASIC_END automatically)
+            List<String> extensions = csrDetails.getExtensions();
+            extensions.remove("BASIC_CA");  // Remove BASIC_CA - end entities should have BASIC_END
+
+            if (!extensions.contains("BASIC_END") && !extensions.contains("BASIC_CA")) {
+                extensions.add(0, "BASIC_END");
+            }
+
+            if (extensions == null || extensions.isEmpty()) {
+                extensions = List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER");
+            }
 
             Long ownerId = authService.getCurrentUserId();
 

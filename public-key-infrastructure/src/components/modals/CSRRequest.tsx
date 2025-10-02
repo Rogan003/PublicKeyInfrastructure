@@ -298,8 +298,38 @@ const CSRRequestModal: React.FC<CSRRequestModalProps> = ({ onClose, onIssued }) 
                                                     lineHeight: 1.35,
                                                 }}
                                             >
-                                            {csrPreview.publicKey}
-                                        </pre>
+                                                {csrPreview.publicKey}
+
+                                                {csrPreview.extensions && csrPreview.extensions.length > 0 && (
+                                                    <>
+                                                        <span className="meta-label" style={{ alignSelf: 'start'}}>Extensions</span>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexWrap: 'wrap',
+                                                            gap: '8px',
+                                                            alignItems: 'center',
+                                                            marginTop: '15px',
+                                                        }}>
+                                                            {csrPreview.extensions.map((ext, idx) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    style={{
+                                                                        padding: '4px 12px',
+                                                                        borderRadius: '16px',
+                                                                        backgroundColor: 'rgba(103, 80, 164, 0.1)',
+                                                                        border: '1px solid rgba(103, 80, 164, 0.3)',
+                                                                        fontSize: '13px',
+                                                                        fontWeight: 500,
+                                                                        color: 'inherit'
+                                                                    }}
+                                                                >
+                                                                    {ext}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </pre>
                                     </div>
                                 </div>
                             )}

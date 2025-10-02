@@ -3,6 +3,8 @@ package org.example.publickeyinfrastructure.DTOs.Csr;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class CsrDTO {
@@ -15,4 +17,5 @@ public class CsrDTO {
     private String country;
     private String email;
     private String publicKey;
+    private List<String> extensions;
 }

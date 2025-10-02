@@ -52,57 +52,61 @@ public class CertificateGeneratorService {
             for (String ext : extensions) {
                 System.out.println("Extension: ");
                 System.out.println(ext);
-                switch (ext.toUpperCase()) {
-                    case "BASIC_CA":
-                        certGen.addExtension(
-                                Extension.basicConstraints,
-                                true,
-                                new BasicConstraints(true) // certificate authority
-                        );
-                        break;
 
-                    case "BASIC_END":
-                        certGen.addExtension(
-                                Extension.basicConstraints,
-                                true,
-                                new BasicConstraints(false) // end-entity
-                        );
-                        break;
+                try {
+                    switch (ext.toUpperCase()) {
+                        case "BASIC_CA":
+                            certGen.addExtension(
+                                    Extension.basicConstraints,
+                                    true,
+                                    new BasicConstraints(true) // certificate authority
+                            );
+                            break;
 
-                    case "KEY_USAGE":
-                        certGen.addExtension(
-                                Extension.keyUsage,
-                                true,
-                                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment)
-                        );
-                        break;
+                        case "BASIC_END":
+                            certGen.addExtension(
+                                    Extension.basicConstraints,
+                                    true,
+                                    new BasicConstraints(false) // end-entity
+                            );
+                            break;
 
-                    case "EXT_KEY_SERVER":
-                        certGen.addExtension(
-                                Extension.extendedKeyUsage,
-                                false,
-                                new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth)
-                        );
-                        break;
+                        case "KEY_USAGE":
+                            certGen.addExtension(
+                                    Extension.keyUsage,
+                                    true,
+                                    new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment)
+                            );
+                            break;
 
-                    case "EXT_KEY_CLIENT":
-                        certGen.addExtension(
-                                Extension.extendedKeyUsage,
-                                false,
-                                new ExtendedKeyUsage(KeyPurposeId.id_kp_clientAuth)
-                        );
-                        break;
+                        case "EXT_KEY_SERVER":
+                            certGen.addExtension(
+                                    Extension.extendedKeyUsage,
+                                    false,
+                                    new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth)
+                            );
+                            break;
 
-                    case "SAN":
-                        certGen.addExtension(
-                                Extension.subjectAlternativeName,
-                                false,
-                                new GeneralNames(
-                                        new GeneralName(subject.getX500Name())
-                                )
-                        );
-                        break;
-                }
+                        case "EXT_KEY_CLIENT":
+                            certGen.addExtension(
+                                    Extension.extendedKeyUsage,
+                                    false,
+                                    new ExtendedKeyUsage(KeyPurposeId.id_kp_clientAuth)
+                            );
+                            break;
+
+                        case "SAN":
+                            certGen.addExtension(
+                                    Extension.subjectAlternativeName,
+                                    false,
+                                    new GeneralNames(
+                                            new GeneralName(subject.getX500Name())
+                                    )
+                            );
+                            break;
+
+                    }
+                } catch (Exception e) {}
             }
 
             X509CertificateHolder certHolder = certGen.build(signer);

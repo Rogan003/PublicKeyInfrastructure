@@ -177,7 +177,7 @@ public class CertificateService {
               newCertificate.getEndDate(), certificate, CertificateType.END_ENTITY, issuerCertificate,
               user, issuerCertificate.getOrganisation());
 
-      certificateRepository.save(created);
+      created = certificateRepository.save(created);
       return created;
   }
 
@@ -415,9 +415,74 @@ public class CertificateService {
         dto.setValidFrom(dateFormat.format(certificate.getStartDate()));
         dto.setValidTo(dateFormat.format(certificate.getEndDate()));
         dto.setCertificateType(certificate.getCertificateType().toString());
-        dto.setExtensions(List.of("BASIC_END", "KEY_USAGE", "EXT_KEY_SERVER")); // Placeholder extensions
         dto.setKeystoreFormat(certificate.getKeystoreFormat());
 
+        dto.setExtensions(extractExtensionsFromCertificate(certificate));
+
         return dto;
+    }
+
+    /**
+     * Extracts extensions from X509Certificate and maps them to simplified format:
+     * - BASIC_CA or BASIC_END (based on BasicConstraints)
+     * - KEY_USAGE (if digitalSignature + keyEncipherment are present)
+     * - EXT_KEY_SERVER (if serverAuth is present)
+     * - EXT_KEY_CLIENT (if clientAuth is present)
+     * - SAN (if Subject Alternative Names are present)
+     */
+    public List<String> extractExtensionsFromCertificate(Certificate certificate) {
+        List<String> extensions = new ArrayList<>();
+
+        try {
+            X509Certificate x509 = certificate.getX509Certificate();
+
+            // 1. Basic Constraints
+            int basicConstraints = x509.getBasicConstraints();
+            if (basicConstraints >= 0) {
+                extensions.add("BASIC_CA");
+            } else {
+                extensions.add("BASIC_END");
+            }
+
+            // 2. Key Usage
+            boolean[] keyUsage = x509.getKeyUsage();
+            if (keyUsage != null) {
+                // Check for digitalSignature (bit 0) and keyEncipherment (bit 2)
+                if (keyUsage.length > 2 && keyUsage[0] && keyUsage[2]) {
+                    extensions.add("KEY_USAGE");
+                }
+            }
+
+            // 3. Extended Key Usage
+            try {
+                List<String> extendedKeyUsage = x509.getExtendedKeyUsage();
+                if (extendedKeyUsage != null) {
+                    for (String oid : extendedKeyUsage) {
+                        if (oid.equals("1.3.6.1.5.5.7.3.1")) { // serverAuth
+                            extensions.add("EXT_KEY_SERVER");
+                        } else if (oid.equals("1.3.6.1.5.5.7.3.2")) { // clientAuth
+                            extensions.add("EXT_KEY_CLIENT");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Extended Key Usage not present
+            }
+
+            // 4. Subject Alternative Names
+            try {
+                Collection<List<?>> sans = x509.getSubjectAlternativeNames();
+                if (sans != null && !sans.isEmpty()) {
+                    extensions.add("SAN");
+                }
+            } catch (Exception e) {
+                // SAN not present
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error extracting extensions: " + e.getMessage());
+        }
+
+        return extensions;
     }
 }
