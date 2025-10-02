@@ -207,7 +207,7 @@ const CreateCertificateModal: React.FC<CreateCertificateModalProps> = ({ onClose
                           <option value="RootCA">Root CA</option>
                       }
                       {
-                          user?.role === "ADMIN" || user?.role === "CERTIFICATE_AUTHORITY" &&
+                          (user?.role === "ADMIN" || user?.role === "CERTIFICATE_AUTHORITY") &&
                           <option value="IntermediateCA">Intermediate CA</option>
                       }
                     <option value="EndEntity">End Entity</option>

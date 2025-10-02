@@ -8,14 +8,19 @@ interface RevocationReasonModalProps {
 const RevocationReason: React.FC<RevocationReasonModalProps> = ({ onClose, onConfirm }) => {
     // X.509 standard reasons for certificate revocation
     const revocationReasons = [
+        { label: 'Unspecified', value: 'unspecified' },
         { label: 'Key Compromise', value: 'key_compromise' },
         { label: 'CA Compromise', value: 'ca_compromise' },
         { label: 'Affiliation Changed', value: 'affiliation_changed' },
         { label: 'Superseded', value: 'superseded' },
-        { label: 'Cease Operation', value: 'cease_operation' },
+        { label: 'Cessation of Operation', value: 'cessation_of_operation' },
+        { label: 'Certificate Hold', value: 'certificate_hold' },
+        { label: 'Remove from CRL', value: 'remove_from_crl' },
+        { label: 'Privilege Withdrawn', value: 'privilege_withdrawn' },
+        { label: 'AA Compromise', value: 'aa_compromise' },
     ];
 
-    const [selectedReason, setSelectedReason] = useState<string | null>(null);
+    const [selectedReason, setSelectedReason] = useState<string>('unspecified');
     const [customEnabled, setCustomEnabled] = useState(false);
     const [comment, setComment] = useState<string>('');
 

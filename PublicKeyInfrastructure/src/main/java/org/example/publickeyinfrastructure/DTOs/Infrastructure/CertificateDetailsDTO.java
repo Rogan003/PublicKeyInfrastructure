@@ -21,4 +21,5 @@ public class CertificateDetailsDTO {
     private Boolean isCa;
     private List<String> keyUsages;
     private List<String> extendedKeyUsages;
+    private String keystoreFormat = "";
 }

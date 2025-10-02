@@ -40,4 +40,5 @@ export interface Certificate {
     isCa: boolean;
     keyUsages: string[];
     extendedKeyUsages: string[];
+    keystoreFormat: string;
 }

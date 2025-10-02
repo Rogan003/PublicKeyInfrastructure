@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
-import type { LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation } from '../types/auth';
+import type {LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisations, UserInfo} from '../types/auth';
 import type {CAInfo} from "../types/csr.ts";
 import type {CACertificateInfo, Certificate, CreateCertificate} from "../types/certificates.ts";
 
@@ -116,12 +116,36 @@ class ApiService {
     return res.data;
   }
 
-  async downloadKeystore(downloadUrl: string): Promise<Blob> {
-    const res = await this.api.get(downloadUrl, { responseType: 'blob' });
-    return res.data;
-  }
+    async downloadCertificate(certificateId: number): Promise<Blob> {
+        const res = await this.api.get(`/csr/${certificateId}/download`, {
+            responseType: 'blob',
+            headers: {
+                'Accept': 'application/x-pem-file'
+            }
+        });
+        return res.data;
+    }
 
-  async logout(): Promise<void> {
+    async downloadPrivateKey(certificateId: number): Promise<Blob> {
+        const res = await this.api.get(`/csr/${certificateId}/download-keystore`, {
+            responseType: 'blob',
+            headers: {
+                'Accept': 'application/octet-stream'
+            }
+        });
+        return res.data;
+    }
+
+    async downloadPrivateKeyWithHeaders(certificateId: number): Promise<AxiosResponse<Blob>> {
+        return await this.api.get(`/csr/${certificateId}/download-keystore`, {
+            responseType: 'blob',
+            headers: {
+                'Accept': 'application/octet-stream'
+            }
+        });
+    }
+
+    async logout(): Promise<void> {
     // For stateless refresh tokens, logout is handled client-side
     // Simply clear the tokens from localStorage
     this.clearTokens();
@@ -154,6 +178,21 @@ class ApiService {
   
   async revokeCertificate(certificateId: number, payload: { reason: string; comment?: string }): Promise<void> {
     await this.api.post(`/certificates/${certificateId}/revoke`, payload);
+  }
+
+    async getCRLForCA(caId: number): Promise<string> {
+        const res = await this.api.get(`/crl/ca/${caId}`, {
+            responseType: 'text',
+            headers: {
+                'Accept': 'text/plain'
+            }
+        });
+        return res.data;
+    }
+
+    async getUserInfo(): Promise<UserInfo> {
+    const response: AxiosResponse<UserInfo> = await this.api.get(`/auth/user-info`);
+    return response.data;
   }
 
   // Token management

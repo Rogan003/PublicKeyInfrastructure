@@ -65,11 +65,16 @@ public class CertificateController {
             List<CertificateDetailsDTO> responseDTOs = new ArrayList<>();
 
             for (Certificate certificate : certificates) {
+                if (certificate.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user == null || (user.getRole() == Role.REGULAR_USER && !isUsersCertificate(certificate, user))) {
                     continue;
                 } else if (user.getRole() == Role.CERTIFICATE_AUTHORITY && !isUserInCertificateChain(certificate, user)) {
                     continue;
                 }
+
                 List<String> keyUsageStrings = getKeyUsageStrings(certificate.getX509Certificate());
                 List<String> extendedKeyUsageStrings = getExtendedKeyUsageStrings(certificate.getX509Certificate());
 
@@ -81,7 +86,8 @@ public class CertificateController {
                         certificate.getEndDate(),
                         certificate.getX509Certificate().getBasicConstraints() >= 0,
                         keyUsageStrings,
-                        extendedKeyUsageStrings
+                        extendedKeyUsageStrings,
+                        certificate.getKeystoreFormat()
                 ));
             }
 
@@ -302,6 +308,10 @@ public class CertificateController {
             List<CACertificateInfoDTO> responseDTO = new ArrayList<>();
 
             for (Certificate caCertificate : caCertificates) {
+                if (caCertificate.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(caCertificate, user)) {
                     continue;
                 }
@@ -313,6 +323,10 @@ public class CertificateController {
             }
 
             for (Certificate intermediateCertificate : intermediateCertificates) {
+                if (intermediateCertificate.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(intermediateCertificate, user)) {
                     continue;
                 }
@@ -417,17 +431,16 @@ public class CertificateController {
                 return ResponseEntity.badRequest().body("Revocation reason is required");
             }
 
-            boolean revoked = certificateService.revokeCertificate(id, reason);
-            if (!revoked) {
+            int revokedCount = certificateService.revokeCertificate(id, reason);
+            if (revokedCount == 0) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Certificate could not be revoked. It may not exist or is already revoked.");
+                        .body("Certificate could not be revoked. It may not exist or is already revoked.");
             }
 
-            return ResponseEntity.ok("Certificate revoked successfully");
+            return ResponseEntity.ok("Certificate and " + (revokedCount - 1) + " descendant(s) revoked successfully. Total: " + revokedCount);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error revoking certificate: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error revoking certificate: " + e.getMessage());
         }
     }
 
@@ -456,6 +469,10 @@ public class CertificateController {
             List<CAInfoDTO> responseDTO = new ArrayList<>();
 
             for (Certificate cert : caCertificates) {
+                if (cert.getRevocationReason() != null) {
+                    continue;
+                }
+
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(cert, user)) {
                     continue;
                 }
@@ -482,39 +499,34 @@ public class CertificateController {
         CAInfoDTO dto = new CAInfoDTO();
         dto.setId(certificate.getId());
         dto.setSerialNumber(certificate.getSerialNumber());
-        dto.setCommonName(certificate.getSubject().getCommonName()); // Assuming Subject entity has getCommonName()
+        dto.setCommonName(certificate.getSubject().getCommonName());
         dto.setSubjectDN(certificate.getSubject().getX500NameString());
         dto.setIssuerDN(certificate.getIssuer().getX500NameString());
         dto.setValidFrom(certificate.getStartDate().toString());
         dto.setValidTo(certificate.getEndDate().toString());
         dto.setRevoked(certificate.getRevocationReason() != null);
+        dto.setKeystoreFormat(certificate.getKeystoreFormat() == null ? "" : certificate.getKeystoreFormat());
         return dto;
     }
 
-    // Fetch constraints for CA certificates
     @GetMapping("/ca/{issuerCAId}/constraints")
     public ResponseEntity<?> getCAConstraints(@PathVariable Long issuerCAId) {
         try {
-            // Retrieve constraints for the CA certificate from the service
             IssuerConstraintsDTO constraints = certificateService.getCAConstraints(issuerCAId);
 
-            // If no constraints are found, return 404
             if (constraints == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("CA certificate or constraints not found for ID: " + issuerCAId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("CA certificate or constraints not found for ID: " + issuerCAId);
             }
-
-            // Return the constraints DTO
             return ResponseEntity.ok(constraints);
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving CA constraints: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving CA constraints: " + e.getMessage());
         }
     }
 
     @GetMapping("/downloads/{filename}")
     public ResponseEntity<Resource> downloadKeystore(@PathVariable String filename) throws IOException {
-        Path filePath = Paths.get("/path/to/keystores", filename); // Location where keystores are stored
+        Path filePath = Paths.get("/path/to/keystores", filename);
         if (!Files.exists(filePath)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(null);

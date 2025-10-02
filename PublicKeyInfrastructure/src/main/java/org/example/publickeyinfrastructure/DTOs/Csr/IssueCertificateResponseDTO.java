@@ -20,5 +20,6 @@ public class IssueCertificateResponseDTO {
     private String validTo;
     private String certificateType;
     private List<String> extensions;
+    private String keystoreFormat = null;
 }
 

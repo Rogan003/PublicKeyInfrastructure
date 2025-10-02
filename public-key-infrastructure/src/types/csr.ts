@@ -10,6 +10,7 @@ export interface CAInfo {
     validFrom: string;
     validTo: string;
     isRevoked: boolean;
+    keystoreFormat: string;
 }
 
 // CA's rules
@@ -47,8 +48,7 @@ export interface CSRAutogenRequest {
 export interface CSRPreview {
     subject: string;
     publicKey: string;
-    //extensions: Record<string, any>;
-    //san?: string[];
+    extensions: string[];
 }
 
 // server's response after user issues a certificate

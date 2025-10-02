@@ -1,8 +1,10 @@
 package org.example.publickeyinfrastructure.Services.Infrastucture;
 
 import org.example.publickeyinfrastructure.DTOs.Infrastructure.SubjectDTO;
+import org.example.publickeyinfrastructure.Entities.Infrastructure.Certificate;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Organisation;
 import org.example.publickeyinfrastructure.Entities.Infrastructure.Subject;
+import org.example.publickeyinfrastructure.Repositories.CertificateRepository;
 import org.example.publickeyinfrastructure.Repositories.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,8 +25,9 @@ import org.bouncycastle.asn1.x500.style.BCStyle;
 @Service
 @Transactional
 public class SubjectService {
-  
-  @Autowired
+    @Autowired
+    private CertificateRepository certificateRepository;
+    @Autowired
   private SubjectRepository subjectRepository;
 
   public Subject createSubject(SubjectDTO subjectDTO, Organisation organisation) {
@@ -60,6 +63,10 @@ public class SubjectService {
       e.printStackTrace();
       return null;
     }
+  }
+
+  public Optional<Subject> saveSubject(Subject subject) {
+      return Optional.of(subjectRepository.save(subject));
   }
 
   public Optional<Subject> getSubjectById(Long id) {
@@ -118,9 +125,16 @@ public class SubjectService {
     return dto;
   }
 
-  public List<SubjectDTO> convertToDTOList(List<Subject> subjects) {
-    return subjects.stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
-  }
+    /**
+     * Check if a subject's private key is still valid (not revoked)
+     */
+    public boolean isSubjectKeyValid(Long subjectId) {
+        // Find certificate by subject
+        List<Certificate> certs = certificateRepository.findAll().stream()
+                .filter(c -> c.getSubject().getId().equals(subjectId))
+                .toList();
+
+        // If any certificate using this subject is revoked, key is invalid
+        return certs.stream().noneMatch(c -> c.getRevocationReason() != null);
+    }
 }

@@ -26,7 +26,10 @@ const CertificateDetailsModal: React.FC<CertificateDetailsModalProps> = ({ certi
             <div><span className="meta-label">Issuer</span><span className="meta-value">{certificate.issuer}</span></div>
             <div><span className="meta-label">Valid from</span><span className="meta-value">{certificate.validFrom}</span></div>
             <div><span className="meta-label">Valid to</span><span className="meta-value">{certificate.validTo}</span></div>
-            <h4>Extensions</h4>
+              { (certificate.keystoreFormat === "PKCS12" || certificate.keystoreFormat === "JKS") &&
+                  <div><span className="meta-label">Keystore Format</span><span className="meta-value">{certificate.keystoreFormat}</span></div>
+              }
+              <h4>Extensions</h4>
               <div><span className="meta-label">Basic constraints</span><span className="meta-value">{certificate.isCa ? "CA" : "End-entity"}</span></div>
               <div><span className="meta-label">Key usage</span><span className="meta-value">{certificate.keyUsages.map((keyUsage) => (
                   <span>

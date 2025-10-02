@@ -70,6 +70,9 @@ public class Certificate {
   @JoinColumn(name = "organisation_id")
   private Organisation organisation;
 
+  @Column(name = "keystore_format")
+  private String keystoreFormat;
+
   public Certificate(Subject subject, Issuer issuer, String serialNumber, 
                     Date startDate, Date endDate, X509Certificate x509Certificate, CertificateType certificateType,
                      Certificate parentCertificate, User owner, Organisation organisation) {
@@ -90,6 +93,9 @@ public class Certificate {
       } catch (Exception e) {
           e.printStackTrace();
       }
+      this.keystoreFormat = null;
+      this.revocationReason = null;
+      this.revocationDate = null;
   }
 
   public X509Certificate getX509Certificate() {

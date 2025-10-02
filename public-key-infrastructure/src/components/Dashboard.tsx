@@ -13,6 +13,7 @@ import CSRRequestModal from './modals/CSRRequest';
 import type {IssueCertificateResponse} from "../types/csr.ts";
 import RevocationReason from "./modals/RevocationReason.tsx";
 import {apiService} from "../services/api.ts";
+import CRLViewer from "./modals/CRLViewer.tsx";
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,6 +25,7 @@ const Dashboard: React.FC = () => {
   const [organisationCreationOpen, setOrganisationCreationOpen] = useState(false);
   const [csrOpen, setCsrOpen] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState<Certificate | null>(null);
+  const [crlOpen, setCrlOpen] = useState(false);
 
   const handleRevokeCertificate = (cert: Certificate) => {
     setRevokeOpen(cert); // Open revocation modal for this certificate
@@ -70,24 +72,60 @@ const Dashboard: React.FC = () => {
     setDetailsOpen(cert);
   };
 
-  const handleDownload = (cert: Certificate) => {
-    const pem = `-----BEGIN CERTIFICATE-----\nMOCK_${cert.id}_BASE64_DATA\n-----END CERTIFICATE-----\n`;
-    const blob = new Blob([pem], { type: 'application/x-pem-file' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${cert.subject.replace(/[^a-z0-9]+/gi, '_')}.pem`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success('Download started');
-  };
+    const handleDownload = async (cert: Certificate) => {
+        try {
+            // Download certificate (always exists)
+            const certBlob = await apiService.downloadCertificate(cert.id);
+            const certUrl = URL.createObjectURL(certBlob);
+            const certLink = document.createElement('a');
+            certLink.href = certUrl;
+            certLink.download = `certificate_${cert.id}.pem`;
+            document.body.appendChild(certLink);
+            certLink.click();
+            certLink.remove();
+            URL.revokeObjectURL(certUrl);
 
-  const handleDelete = (cert: Certificate) => {
-    setCertificates(prev => prev.filter(c => c.id !== cert.id));
-    toast.success('Certificate deleted');
-  };
+            // Check if private key exists (based on keystoreFormat field)
+            if (cert.keystoreFormat && (cert.keystoreFormat === 'PKCS12' || cert.keystoreFormat === 'JKS')) {
+                try {
+                    const keystoreResponse = await apiService.downloadPrivateKeyWithHeaders(cert.id);
+                    const keystoreBlob = keystoreResponse.data;
+
+                    // Extract filename from Content-Disposition header
+                    const contentDisposition = keystoreResponse.headers['content-disposition'];
+                    const extension = cert.keystoreFormat === 'JKS' ? '.jks' : '.p12';
+                    let fileName = `keystore_${cert.id}${extension}`; // Default based on format
+
+                    if (contentDisposition) {
+                        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (fileNameMatch && fileNameMatch[1]) {
+                            fileName = fileNameMatch[1].replace(/['"]/g, '');
+                        }
+                    }
+
+                    const keystoreUrl = URL.createObjectURL(keystoreBlob);
+                    const keystoreLink = document.createElement('a');
+                    keystoreLink.href = keystoreUrl;
+                    keystoreLink.download = fileName;
+                    document.body.appendChild(keystoreLink);
+                    keystoreLink.click();
+                    keystoreLink.remove();
+                    URL.revokeObjectURL(keystoreUrl);
+
+                    toast.success('Certificate and keystore downloaded successfully');
+                } catch (keystoreError: unknown) {
+                    console.error('Keystore download error:', keystoreError);
+                    toast.error('Certificate downloaded, but keystore download failed');
+                }
+            } else {
+                // No private key available
+                toast.success('Certificate downloaded successfully');
+            }
+        } catch (error: unknown) {
+            console.error('Certificate download error:', error);
+            toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error downloading certificate');
+        }
+    };
 
   useEffect(() => {
       apiService.getAllCertificates().then(setCertificates)
@@ -114,10 +152,13 @@ const Dashboard: React.FC = () => {
 
       <main className="dashboard-content">
         <div className="dashboard-actions">
-          <button className="button-primary" onClick={handleCreateCertificate}>
-            <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
-            Create Certificate
-          </button>
+            {
+                user.role != 'REGULAR_USER' &&
+                <button className="button-primary" onClick={handleCreateCertificate}>
+                    <span className="material-symbols-outlined" aria-hidden>auto_awesome</span>
+                    Create Certificate
+                </button>
+            }
             {
                 user.role === 'REGULAR_USER' &&
                 <button className="button-tonal" onClick={() => setCsrOpen(true)}>
@@ -144,6 +185,10 @@ const Dashboard: React.FC = () => {
                     Create Organisation
                 </button>
             }
+            <button className="button-tonal" onClick={() => setCrlOpen(true)}>
+                <span className="material-symbols-outlined" aria-hidden>list_alt</span>
+                View CRL
+            </button>
         </div>
 
           <div className="dashboard-card">
@@ -194,16 +239,26 @@ const Dashboard: React.FC = () => {
                                   className="meta-value"
                                   style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                               >
-                    {cert.validFrom}
-                  </span>
+                             {cert.validFrom}
+                              </span>
 
                               <span className="meta-label">Valid to</span>
                               <span
                                   className="meta-value"
                                   style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                               >
-                    {cert.validTo}
-                  </span>
+                              {cert.validTo}
+                              </span>
+
+                              {
+                                  (cert.keystoreFormat == 'PKCS12' || cert.keystoreFormat == 'JKS') &&
+                                  <><span className="meta-label">Keystore Format</span><span
+                                      className="meta-value"
+                                      style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}
+                                  >
+                                      {cert.keystoreFormat}
+                                  </span></>
+                              }
                           </div>
                           <div className="card-actions">
                               <button className="button-outlined" onClick={() => handleView(cert)}>
@@ -263,6 +318,10 @@ const Dashboard: React.FC = () => {
 
         />
       )}
+      {crlOpen && (
+         <CRLViewer onClose={() => setCrlOpen(false)} />
+      )}
+
     </div>
   );
 };
