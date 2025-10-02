@@ -21,13 +21,26 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
         try {
             const crl = await apiService.getCRLForCA(Number(certId));
             setCrlContent(crl);
-        } catch (error: unknown) {
-            const errorMessage = (error as { response?: { data?: string } })?.response?.data || 'Failed to fetch CRL';
-            toast.error(errorMessage);
+        } catch (error: any) {
+            toast.error(error?.response?.data || 'Failed to fetch CRL');
             setCrlContent('');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDownload = () => {
+        if (!crlContent) return;
+
+        const blob = new Blob([crlContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `crl_${certId}.crl`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -45,8 +58,11 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
                     </button>
                 </div>
 
+                <p style={{marginLeft: '30px'}}>xopenssl crl -in crl_1.crl -outform DER -out crl_1.der</p>
+
                 <div className="modal-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+
                         <div style={{ flex: 1 }}>
                             <label htmlFor="cert-id" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
                                 CA Certificate ID:
@@ -62,8 +78,7 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
                                     padding: '8px 12px',
                                     borderRadius: 8,
                                     border: '1px solid #ccc',
-                                    fontSize: 14,
-                                    color: 'inherit'
+                                    fontSize: 14
                                 }}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -81,6 +96,16 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
                             <span className="material-symbols-outlined" aria-hidden>search</span>
                             {loading ? 'Loading...' : 'View CRL'}
                         </button>
+                        {crlContent && (
+                            <button
+                                className="button-tonal"
+                                onClick={handleDownload}
+                                style={{ whiteSpace: 'nowrap' }}
+                            >
+                                <span className="material-symbols-outlined" aria-hidden>download</span>
+                                Download
+                            </button>
+                        )}
                     </div>
 
                     {crlContent && (
@@ -95,11 +120,10 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
                         }}>
                             <div style={{
                                 padding: '8px 12px',
-                                backgroundColor: '#1a1a1a',
-                                borderBottom: '1px solid #333',
+                                backgroundColor: '#000000',
+                                borderBottom: '1px solid #ddd',
                                 fontWeight: 500,
-                                fontSize: 14,
-                                color: '#fff'
+                                fontSize: 14
                             }}>
                                 CRL Content (PEM Format):
                             </div>
@@ -111,11 +135,11 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
                                     width: '100%',
                                     padding: 12,
                                     border: 'none',
-                                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                    fontFamily: 'monospace',
                                     fontSize: 12,
                                     resize: 'none',
-                                    backgroundColor: '#000',
-                                    color: '#0f0',
+                                    backgroundColor: '#000000',
+                                    color: '#00ff00',
                                     whiteSpace: 'pre',
                                     overflow: 'auto'
                                 }}
