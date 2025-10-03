@@ -58,7 +58,7 @@ const CRLViewer: React.FC<CRLViewerProps> = ({ onClose }) => {
                     </button>
                 </div>
 
-                <p style={{marginLeft: '30px'}}>xopenssl crl -in crl_1.crl -outform DER -out crl_1.der</p>
+                <p style={{marginLeft: '30px'}}>openssl crl -in crl_1.crl -text -noout</p>
 
                 <div className="modal-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
