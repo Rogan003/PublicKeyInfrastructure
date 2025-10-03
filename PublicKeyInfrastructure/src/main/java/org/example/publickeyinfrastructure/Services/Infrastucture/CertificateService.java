@@ -359,7 +359,7 @@ public class CertificateService {
 
       int count = 1;
 
-      // Find and revoke all children recursively
+      // find and revoke all children recursively
       List<Certificate> children = findChildCertificates(id);
       for (Certificate child : children) {
           count += revokeCertificate(child.getId(), reason);
@@ -511,15 +511,12 @@ public class CertificateService {
 
     public byte[] convertKeystoreFormat(byte[] keystoreData, String fromFormat, String toFormat, String password) {
         try {
-            // Load the source keystore
             KeyStore sourceKeyStore = KeyStore.getInstance(fromFormat);
             sourceKeyStore.load(new java.io.ByteArrayInputStream(keystoreData), password.toCharArray());
 
-            // Create destination keystore
             KeyStore destKeyStore = KeyStore.getInstance(toFormat);
             destKeyStore.load(null, password.toCharArray());
 
-            // Copy all entries
             java.util.Enumeration<String> aliases = sourceKeyStore.aliases();
             while (aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
@@ -534,7 +531,6 @@ public class CertificateService {
                 }
             }
 
-            // Write to byte array
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             destKeyStore.store(outputStream, password.toCharArray());
             return outputStream.toByteArray();

@@ -75,13 +75,12 @@ const Dashboard: React.FC = () => {
 
     const handleDownloadWithFormat = async (cert: Certificate, format: 'JKS' | 'PKCS12') => {
         try {
-            const password = 'changeit'; // You might want to prompt user for this
+            const password = 'changeit'; 
 
-            // Download keystore in the requested format
             const response = await apiService.downloadKeystoreWithFormat(cert.id, format, password);
             const keystoreBlob = response.data;
 
-            // Extract filename from Content-Disposition header
+            // extract filename from Content-Disposition header
             const contentDisposition = response.headers['content-disposition'];
             const extension = format === 'JKS' ? '.jks' : '.p12';
             let fileName = `keystore_${cert.id}${extension}`;
@@ -113,10 +112,9 @@ const Dashboard: React.FC = () => {
     };
 
     const handleDownload = (cert: Certificate) => {
-        // Toggle format selection for this certificate
+        // toggle format selection for this certificate
         setDownloadingCertId(downloadingCertId === cert.id ? null : cert.id);
     };
-
 
     useEffect(() => {
       apiService.getAllCertificates().then(setCertificates)

@@ -125,9 +125,8 @@ public class CsrController {
             String organizationUnit = csrDetails.getOrganizationUnit();
             subjectDTO.setOrganizationUnit((organizationUnit != null && !organizationUnit.isBlank()) ? organizationUnit : "Default Unit");
 
-            // Use extensions extracted from CSR (includes BASIC_END automatically)
             List<String> extensions = csrDetails.getExtensions();
-            extensions.remove("BASIC_CA");  // Remove BASIC_CA - end entities should have BASIC_END
+            extensions.remove("BASIC_CA");
 
             if (!extensions.contains("BASIC_END") && !extensions.contains("BASIC_CA")) {
                 extensions.add(0, "BASIC_END");
@@ -258,7 +257,7 @@ public class CsrController {
                 Files.createDirectories(directoryPath);
             }
 
-            // Use appropriate extension based on format
+            // extension based on keystoreFormat
             String extension = keystoreFormat.equalsIgnoreCase("JKS") ? ".jks" : ".p12";
             String filename = "keystore_" + certificateId + extension;
             Path filePath = directoryPath.resolve(filename);
@@ -293,7 +292,6 @@ public class CsrController {
         }
     }
 
-    // Download private key as keystore (.p12 or .jks)
     @GetMapping("/{certificateId}/download-keystore")
     public ResponseEntity<?> downloadKeystore(@PathVariable Long certificateId) {
         try {
@@ -302,14 +300,12 @@ public class CsrController {
             Path filePath = null;
             String fileName = null;
 
-            // check for PKCS12 format
             Path p12Path = keystoreDirectory.resolve("keystore_" + certificateId + ".p12");
             if (Files.exists(p12Path)) {
                 filePath = p12Path;
                 fileName = "keystore_" + certificateId + ".p12";
 
             } else {
-            // check for JKS format
                 Path jksPath = keystoreDirectory.resolve("keystore_" + certificateId + ".jks");
                 if (Files.exists(jksPath)) {
                     filePath = jksPath;
