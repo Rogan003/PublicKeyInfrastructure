@@ -145,6 +145,19 @@ class ApiService {
         });
     }
 
+    async downloadKeystoreWithFormat(certificateId: number, format: string, password: string): Promise<AxiosResponse<Blob>> {
+        return await this.api.get(`/certificates/${certificateId}/download-keystore`, {
+            params: {
+                format,
+                password
+            },
+            responseType: 'blob',
+            headers: {
+                'Accept': 'application/octet-stream'
+            }
+        });
+    }
+
     async logout(): Promise<void> {
     // For stateless refresh tokens, logout is handled client-side
     // Simply clear the tokens from localStorage
@@ -217,6 +230,7 @@ class ApiService {
   isAuthenticated(): boolean {
     return !!this.getAccessToken();
   }
+  
 }
 
 export const apiService = new ApiService();

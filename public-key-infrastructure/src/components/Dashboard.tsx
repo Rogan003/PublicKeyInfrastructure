@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
   const [csrOpen, setCsrOpen] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState<Certificate | null>(null);
   const [crlOpen, setCrlOpen] = useState(false);
+    const [downloadingCertId, setDownloadingCertId] = useState<number | null>(null);
 
   const handleRevokeCertificate = (cert: Certificate) => {
     setRevokeOpen(cert); // Open revocation modal for this certificate
@@ -72,62 +73,52 @@ const Dashboard: React.FC = () => {
     setDetailsOpen(cert);
   };
 
-    const handleDownload = async (cert: Certificate) => {
+    const handleDownloadWithFormat = async (cert: Certificate, format: 'JKS' | 'PKCS12') => {
         try {
-            // Download certificate (always exists)
-            const certBlob = await apiService.downloadCertificate(cert.id);
-            const certUrl = URL.createObjectURL(certBlob);
-            const certLink = document.createElement('a');
-            certLink.href = certUrl;
-            certLink.download = `certificate_${cert.id}.pem`;
-            document.body.appendChild(certLink);
-            certLink.click();
-            certLink.remove();
-            URL.revokeObjectURL(certUrl);
+            const password = 'changeit'; // You might want to prompt user for this
 
-            // Check if private key exists (based on keystoreFormat field)
-            if (cert.keystoreFormat && (cert.keystoreFormat === 'PKCS12' || cert.keystoreFormat === 'JKS')) {
-                try {
-                    const keystoreResponse = await apiService.downloadPrivateKeyWithHeaders(cert.id);
-                    const keystoreBlob = keystoreResponse.data;
+            // Download keystore in the requested format
+            const response = await apiService.downloadKeystoreWithFormat(cert.id, format, password);
+            const keystoreBlob = response.data;
 
-                    // Extract filename from Content-Disposition header
-                    const contentDisposition = keystoreResponse.headers['content-disposition'];
-                    const extension = cert.keystoreFormat === 'JKS' ? '.jks' : '.p12';
-                    let fileName = `keystore_${cert.id}${extension}`; // Default based on format
+            // Extract filename from Content-Disposition header
+            const contentDisposition = response.headers['content-disposition'];
+            const extension = format === 'JKS' ? '.jks' : '.p12';
+            let fileName = `keystore_${cert.id}${extension}`;
 
-                    if (contentDisposition) {
-                        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                        if (fileNameMatch && fileNameMatch[1]) {
-                            fileName = fileNameMatch[1].replace(/['"]/g, '');
-                        }
-                    }
-
-                    const keystoreUrl = URL.createObjectURL(keystoreBlob);
-                    const keystoreLink = document.createElement('a');
-                    keystoreLink.href = keystoreUrl;
-                    keystoreLink.download = fileName;
-                    document.body.appendChild(keystoreLink);
-                    keystoreLink.click();
-                    keystoreLink.remove();
-                    URL.revokeObjectURL(keystoreUrl);
-
-                    toast.success('Certificate and keystore downloaded successfully');
-                } catch (keystoreError: unknown) {
-                    console.error('Keystore download error:', keystoreError);
-                    toast.error('Certificate downloaded, but keystore download failed');
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    fileName = fileNameMatch[1].replace(/['"]/g, '');
                 }
-            } else {
-                // No private key available
-                toast.success('Certificate downloaded successfully');
             }
+
+            const keystoreUrl = URL.createObjectURL(keystoreBlob);
+            const keystoreLink = document.createElement('a');
+            keystoreLink.href = keystoreUrl;
+            keystoreLink.download = fileName;
+            document.body.appendChild(keystoreLink);
+            keystoreLink.click();
+            keystoreLink.remove();
+            URL.revokeObjectURL(keystoreUrl);
+
+            toast.success(`Keystore downloaded successfully in ${format} format`);
+            setDownloadingCertId(null);
+
         } catch (error: unknown) {
-            console.error('Certificate download error:', error);
-            toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error downloading certificate');
+            console.error('Keystore download error:', error);
+            toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error downloading keystore');
+            setDownloadingCertId(null);
         }
     };
 
-  useEffect(() => {
+    const handleDownload = (cert: Certificate) => {
+        // Toggle format selection for this certificate
+        setDownloadingCertId(downloadingCertId === cert.id ? null : cert.id);
+    };
+
+
+    useEffect(() => {
       apiService.getAllCertificates().then(setCertificates)
   }, [detailsOpen, createOpen, userCreationOpen, organisationCreationOpen]);
 
@@ -266,10 +257,67 @@ const Dashboard: React.FC = () => {
                                   View
                               </button>
 
-                              <button className="button-tonal" onClick={() => handleDownload(cert)}>
-                                  <span className="material-symbols-outlined" aria-hidden>download</span>
-                                  Download
-                              </button>
+                              <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <button className="button-tonal" onClick={() => handleDownload(cert)}>
+                                      <span className="material-symbols-outlined" aria-hidden>download</span>
+                                      Download
+                                  </button>
+
+                                  {downloadingCertId === cert.id && (
+                                      <div style={{
+                                          position: 'absolute',
+                                          top: '100%',
+                                          left: 0,
+                                          marginTop: '4px',
+                                          backgroundColor: 'var(--surface-container-high, #fff)',
+                                          border: '1px solid var(--outline-variant, #ccc)',
+                                          borderRadius: '8px',
+                                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                                          zIndex: 10,
+                                          minWidth: '120px',
+                                          overflow: 'hidden'
+                                      }}>
+                                          <button
+                                              onClick={() => handleDownloadWithFormat(cert, 'PKCS12')}
+                                              style={{
+                                                  display: 'block',
+                                                  width: '100%',
+                                                  padding: '10px 16px',
+                                                  border: 'none',
+                                                  background: 'transparent',
+                                                  textAlign: 'left',
+                                                  cursor: 'pointer',
+                                                  fontSize: '14px',
+                                                  transition: 'background-color 0.2s'
+                                              }}
+                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-container-highest, #f0f0f0)'}
+                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                          >
+                                              PKCS12 (.p12)
+                                          </button>
+                                          <button
+                                              onClick={() => handleDownloadWithFormat(cert, 'JKS')}
+                                              style={{
+                                                  display: 'block',
+                                                  width: '100%',
+                                                  padding: '10px 16px',
+                                                  border: 'none',
+                                                  background: 'transparent',
+                                                  textAlign: 'left',
+                                                  cursor: 'pointer',
+                                                  fontSize: '14px',
+                                                  transition: 'background-color 0.2s'
+                                              }}
+                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-container-highest, #f0f0f0)'}
+                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                          >
+                                              JKS (.jks)
+                                          </button>
+                                      </div>
+                                  )}
+                              </div>
+
+
 
                               <button className="button-danger" onClick={() => handleRevokeCertificate(cert)}>
                                   <span className="material-symbols-outlined" aria-hidden>delete</span>

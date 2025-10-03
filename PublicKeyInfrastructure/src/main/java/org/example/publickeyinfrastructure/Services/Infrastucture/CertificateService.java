@@ -506,4 +506,41 @@ public class CertificateService {
 
         return extensions;
     }
+
+    /// /////////////////
+
+    public byte[] convertKeystoreFormat(byte[] keystoreData, String fromFormat, String toFormat, String password) {
+        try {
+            // Load the source keystore
+            KeyStore sourceKeyStore = KeyStore.getInstance(fromFormat);
+            sourceKeyStore.load(new java.io.ByteArrayInputStream(keystoreData), password.toCharArray());
+
+            // Create destination keystore
+            KeyStore destKeyStore = KeyStore.getInstance(toFormat);
+            destKeyStore.load(null, password.toCharArray());
+
+            // Copy all entries
+            java.util.Enumeration<String> aliases = sourceKeyStore.aliases();
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+
+                if (sourceKeyStore.isKeyEntry(alias)) {
+                    java.security.Key key = sourceKeyStore.getKey(alias, password.toCharArray());
+                    java.security.cert.Certificate[] chain = sourceKeyStore.getCertificateChain(alias);
+                    destKeyStore.setKeyEntry(alias, key, password.toCharArray(), chain);
+                } else if (sourceKeyStore.isCertificateEntry(alias)) {
+                    java.security.cert.Certificate cert = sourceKeyStore.getCertificate(alias);
+                    destKeyStore.setCertificateEntry(alias, cert);
+                }
+            }
+
+            // Write to byte array
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            destKeyStore.store(outputStream, password.toCharArray());
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to convert keystore format: " + e.getMessage(), e);
+        }
+    }
 }
