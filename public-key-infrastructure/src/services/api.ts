@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
-import type {LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisations, UserInfo} from '../types/auth';
+import type {LoginDTO, RegistrationDTO, AuthResponseDTO, TokenRefreshDTO, Organisation, UserInfo} from '../types/auth';
 import type {CAInfo} from "../types/csr.ts";
 import type {CACertificateInfo, Certificate, CreateCertificate} from "../types/certificates.ts";
 
@@ -115,35 +115,6 @@ class ApiService {
     const res = await this.api.post('/csr/issue-autogen', payload);
     return res.data;
   }
-
-    async downloadCertificate(certificateId: number): Promise<Blob> {
-        const res = await this.api.get(`/csr/${certificateId}/download`, {
-            responseType: 'blob',
-            headers: {
-                'Accept': 'application/x-pem-file'
-            }
-        });
-        return res.data;
-    }
-
-    async downloadPrivateKey(certificateId: number): Promise<Blob> {
-        const res = await this.api.get(`/csr/${certificateId}/download-keystore`, {
-            responseType: 'blob',
-            headers: {
-                'Accept': 'application/octet-stream'
-            }
-        });
-        return res.data;
-    }
-
-    async downloadPrivateKeyWithHeaders(certificateId: number): Promise<AxiosResponse<Blob>> {
-        return await this.api.get(`/csr/${certificateId}/download-keystore`, {
-            responseType: 'blob',
-            headers: {
-                'Accept': 'application/octet-stream'
-            }
-        });
-    }
 
     async downloadKeystoreWithFormat(certificateId: number, format: string, password: string): Promise<AxiosResponse<Blob>> {
         return await this.api.get(`/certificates/${certificateId}/download-keystore`, {

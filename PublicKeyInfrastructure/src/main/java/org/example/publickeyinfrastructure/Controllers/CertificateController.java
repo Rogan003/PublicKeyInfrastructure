@@ -69,7 +69,6 @@ public class CertificateController {
                 if (certificate.getRevocationReason() != null) {
                     continue;
                 }
-
                 if (user == null || (user.getRole() == Role.REGULAR_USER && !isUsersCertificate(certificate, user))) {
                     continue;
                 } else if (user.getRole() == Role.CERTIFICATE_AUTHORITY && !isUserInCertificateChain(certificate, user)) {
@@ -312,7 +311,6 @@ public class CertificateController {
                 if (caCertificate.getRevocationReason() != null) {
                     continue;
                 }
-
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(caCertificate, user)) {
                     continue;
                 }
@@ -327,7 +325,6 @@ public class CertificateController {
                 if (intermediateCertificate.getRevocationReason() != null) {
                     continue;
                 }
-
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(intermediateCertificate, user)) {
                     continue;
                 }
@@ -473,7 +470,6 @@ public class CertificateController {
                 if (cert.getRevocationReason() != null) {
                     continue;
                 }
-
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(cert, user)) {
                     continue;
                 }
@@ -482,6 +478,9 @@ public class CertificateController {
             }
 
             for (Certificate cert : intermediateCertificates) {
+                if (cert.getRevocationReason() != null) {
+                    continue;
+                }
                 if (user.getRole() != Role.ADMIN && !isCertifacateInUserOrganisation(cert, user)) {
                     continue;
                 }
